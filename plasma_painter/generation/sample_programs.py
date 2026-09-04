@@ -39,6 +39,10 @@ def _local_samples(config: dict[str, Any], prompt: str, count: int) -> Iterator[
         torch_dtype="auto",
         device_map="auto",
     )
+    adapter = os.environ.get("PLASMA_PAINTER_ADAPTER_PATH")
+    if adapter:
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, adapter, is_trainable=False, local_files_only=True)
     model.eval()
     messages = [{"role": "user", "content": prompt}]
     encoded = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(model.device)
@@ -91,7 +95,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
         selected = "local" if config["generation"].get("local_model_path") else "fixture"
     if selected == "local":
         programs = _local_samples(config, prompt, count)
-        origin = "frozen_local_base_model"
+        origin = "local_sft_adapter" if os.environ.get("PLASMA_PAINTER_ADAPTER_PATH") else "frozen_local_base_model"
     elif selected == "fixture":
         reference = Path(config["renderer"]["baseline_program"]).read_text(encoding="utf-8")
         programs = _fixture_samples(reference, count)
@@ -105,6 +109,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
     prompt_path.write_text(prompt + "\n", encoding="utf-8")
     records = []
     for index, code in enumerate(programs):
+        code = code.rstrip() + "\n"
         program_hash = stable_hash(code)
         code_path = output / f"{program_hash}.js"
         code_path.write_text(code.rstrip() + "\n", encoding="utf-8")
@@ -114,7 +119,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
             "program_path": str(code_path.resolve()),
             "origin": origin,
             "base_model": config["generation"]["base_model"] if selected == "local" else None,
-            "checkpoint": config["generation"]["base_model"] if selected == "local" else "fixture",
+            "checkpoint": (os.environ.get("PLASMA_PAINTER_ADAPTER_PATH") or config["generation"]["base_model"]) if selected == "local" else "fixture",
             "prompt_version": selected_prompt,
             "prompt_hash": prompt_hash,
             "seed": int(config["project"]["seed"]) + index,
