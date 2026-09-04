@@ -31,7 +31,7 @@ def build_sft_dataset(config: dict) -> list[dict]:
         frame = json.loads(Path(clip_item["path"]).read_text(encoding="utf-8"))["frames"][0]
         examples.append(
             {
-                "prompt": build_prompt(frame, optimized=True),
+                "prompt": build_prompt(frame, media=True),
                 "completion": program.read_text(encoding="utf-8"),
                 "clip_id": clip_item["clip_id"],
                 "split": "art_train",
@@ -53,10 +53,11 @@ def execute_sft(config: dict, examples: list[dict]) -> dict:
         for item in json.loads(filter_report.read_text(encoding="utf-8"))["results"]
         if item.get("origin") == "frozen_local_base_model"
     ]
-    accepted = sum(item.get("accepted", False) for item in actual)
+    accepted = sum(item.get("accepted", False) and item.get("pixel_render_valid", False) for item in actual)
     if len(actual) < 20 or accepted / max(len(actual), 1) < 0.80:
         raise RuntimeError("SFT is gated on at least 20 actual frozen-model candidates and 80% filtered render success")
     model_path = require_local_model(config)
+    torch.manual_seed(int(config['project']['seed']))
     model, tokenizer = load_lora_model(config, model_path)
     model.train()
     optimizer = torch.optim.AdamW((item for item in model.parameters() if item.requires_grad), lr=float(config["training"]["learning_rate"]))
@@ -67,11 +68,14 @@ def execute_sft(config: dict, examples: list[dict]) -> dict:
         item = examples[step % len(examples)]
         input_ids, attention, labels = completion_tensors(tokenizer, item["prompt"], item["completion"], next(model.parameters()).device)
         loss = model(input_ids=input_ids, attention_mask=attention, labels=labels).loss
+        if not torch.isfinite(loss):
+            raise RuntimeError('Non-finite SFT loss; stopping without saving an adapter')
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         losses.append(float(loss.detach().cpu()))
+        print(f"SFT step {step + 1}/{steps}: loss={losses[-1]:.5f}", flush=True)
     output = artifact_root(config) / "adapters" / "tcv-watercolor-sft"
     model.save_pretrained(output)
     tokenizer.save_pretrained(output)

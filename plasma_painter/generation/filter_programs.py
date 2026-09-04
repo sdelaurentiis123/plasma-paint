@@ -8,9 +8,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+import numpy as np
 
 from plasma_painter.config import artifact_root, load_config, write_json
 from plasma_painter.renderer.sandbox import run_program
+from plasma_painter.renderer.canvas_runtime import CanvasRuntime
 
 
 def filter_candidate(code: str, frames: list[dict[str, Any]], config: dict[str, Any], style: dict[str, Any]) -> dict[str, Any]:
@@ -24,8 +26,24 @@ def filter_candidate(code: str, frames: list[dict[str, Any]], config: dict[str, 
         max_path_points=int(config["renderer"]["max_path_points"]),
     )
     nonempty = bool(result.operations_by_frame) and all(bool(items) for items in result.operations_by_frame)
+    pixel_valid = False
+    render_error = None
+    if result.valid and nonempty:
+        try:
+            runtime = CanvasRuntime(192, 128, style, int(config['project']['seed']))
+            images = runtime.render_clip(frames, result.operations_by_frame)
+            blank = CanvasRuntime(192, 128, style, int(config['project']['seed']))
+            paper_ops = [[op for op in ops if op['op']=='createPaper'] for ops in result.operations_by_frame]
+            papers = blank.render_clip(frames, paper_ops)
+            pixel_valid = len(images)==len(frames) and all(
+                float(np.mean(np.abs(np.asarray(a,dtype=float)-np.asarray(b,dtype=float)))) > 0.5
+                for a,b in zip(images,papers))
+        except (ValueError, TypeError, KeyError, RuntimeError, OverflowError) as error:
+            render_error = str(error)
     return {
-        "accepted": bool(result.valid and nonempty),
+        "accepted": bool(result.valid and nonempty and pixel_valid),
+        "pixel_render_valid": pixel_valid,
+        "render_error": render_error,
         "sandbox_valid": result.valid,
         "nonempty_operations": nonempty,
         "elapsed_ms": result.elapsed_ms,

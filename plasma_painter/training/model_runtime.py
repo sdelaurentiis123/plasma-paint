@@ -39,13 +39,17 @@ def load_lora_model(config: dict[str, Any], model_path: Path, *, adapter_path: P
     return model, tokenizer
 
 
-def completion_tensors(tokenizer, prompt: str, completion: str, device, max_length: int = 4096):
+def completion_tensors(tokenizer, prompt: str, completion: str, device, max_length: int = 8192):
+    if hasattr(tokenizer, 'apply_chat_template') and getattr(tokenizer, 'chat_template', None):
+        prompt = tokenizer.apply_chat_template([{'role':'user','content':prompt}], tokenize=False, add_generation_prompt=True)
     prompt_ids = tokenizer(prompt, add_special_tokens=True, truncation=True, max_length=max_length)["input_ids"]
     full = tokenizer(prompt + completion, add_special_tokens=True, truncation=True, max_length=max_length, return_tensors="pt")
     input_ids = full["input_ids"].to(device)
     attention = full["attention_mask"].to(device)
     labels = input_ids.clone()
     labels[:, : min(len(prompt_ids), labels.shape[1])] = -100
+    if not bool((labels != -100).any()):
+        raise ValueError('Prompt leaves no completion tokens for training; refusing an empty loss')
     return input_ids, attention, labels
 
 
