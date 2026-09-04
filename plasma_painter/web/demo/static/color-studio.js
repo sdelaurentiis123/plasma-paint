@@ -10,6 +10,11 @@ const operations=[];
 const api={reset(){}};
 for(const op of ['createPaper','setPalette','washRegion','strokePath','dryBrushPath','dab','poolPigment','scatterGrain','fadeLayer','composite']) api[op]=(args={})=>operations.push({op,args});
 const painter=createPainter(Object.freeze(api),style);
+const mediumLabel=document.createElement('label');mediumLabel.textContent='Medium ';
+const medium=document.createElement('select');medium.innerHTML='<option value="watercolor">Mineral watercolor</option><option value="pencil">Pencil study</option>';
+mediumLabel.append(medium);document.querySelector('.toolbar').prepend(mediumLabel);
+const spaceLink=document.createElement('a');spaceLink.href='slice-space.html';spaceLink.textContent='Enter slice space ↗';document.querySelector('.intro').append(' ',spaceLink);
+medium.onchange=()=>{style.sketch=medium.value==='pencil';$('painting').setAttribute('aria-label',style.sketch?'Pencil contours and gradient hatching from plasma density':'Colorful data-driven watercolor');document.querySelector('figure figcaption').textContent=style.sketch?'Pencil study · signed density contours and gradient hatching':'Watercolor study · field wash + density structures';draw();};
 function draw(){
   // Reconstruct from clip start so scrubbing has the same seeded pigment history as playback.
   paint.seed=clip.seed;paint.persistent.getContext('2d').clearRect(0,0,768,512);painter.reset(clip.seed);

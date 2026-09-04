@@ -36,6 +36,7 @@ export class BrowserCanvasRuntime {
   }
   render(frame, operations) {
     if (this.scientific) { this.scientificFrame(frame); return; }
+    if (this.style.sketch) { this.sketchFrame(frame); return; }
     let paper = this.style.paper, grain = this.style.grain;
     for (const item of operations) if (item.op === 'createPaper') { paper = item.args.color || paper; grain = item.args.grain ?? grain; }
     this.ctx.fillStyle = paper; this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -58,5 +59,29 @@ export class BrowserCanvasRuntime {
     }
     this.ctx.drawImage(this.persistent, 0, 0); this.ctx.strokeStyle = 'rgba(55,49,42,.18)'; this.ctx.lineWidth = 1;
     const separatrix = frame.geometry.separatrix_face_u * this.canvas.width; this.ctx.beginPath(); this.ctx.moveTo(separatrix, 0); this.ctx.lineTo(separatrix, this.canvas.height); this.ctx.stroke();
+  }
+  sketchFrame(frame) {
+    const ctx=this.ctx,w=this.canvas.width,h=this.canvas.height;
+    ctx.fillStyle='#f5f1e7';ctx.fillRect(0,0,w,h);
+    ctx.lineCap='round';ctx.lineJoin='round';
+    for(const contour of frame.contours){
+      ctx.strokeStyle=contour.sign>0?'rgba(44,43,46,.64)':'rgba(78,91,116,.46)';
+      ctx.lineWidth=contour.sign>0?1.25:.8;
+      ctx.setLineDash(contour.sign>0?[]:[5,2]);
+      for(let pass=0;pass<2;pass++){
+        ctx.beginPath();contour.points.forEach((p,i)=>{const q=this.point(p),d=pass*.45;i?ctx.lineTo(q[0]+d,q[1]+d):ctx.moveTo(q[0]+d,q[1]+d);});ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]);
+    for(const v of frame.vectors.density_gradient){
+      ctx.strokeStyle=`rgba(50,52,57,${.08+.22*v.magnitude})`;ctx.lineWidth=.65;
+      const q=this.point([v.x,v.z]),length=3+v.magnitude*11;
+      ctx.beginPath();ctx.moveTo(q[0],q[1]);ctx.lineTo(q[0]+v.dx*length,q[1]+v.dz*length);ctx.stroke();
+    }
+    for(const f of frame.filaments){const q=this.point(f.centroid),r=Math.max(3,Math.sqrt(f.area_fraction)*h*.65);
+      ctx.strokeStyle=f.sign>0?'rgba(49,48,48,.28)':'rgba(62,84,124,.25)';ctx.lineWidth=.6;
+      for(let k=-r;k<=r;k+=3){const half=Math.sqrt(Math.max(0,r*r-k*k));ctx.beginPath();ctx.moveTo(q[0]-half,q[1]+k);ctx.lineTo(q[0]+half,q[1]+k);ctx.stroke();}
+    }
+    ctx.strokeStyle='rgba(130,88,66,.35)';ctx.lineWidth=.8;const x=frame.geometry.separatrix_face_u*w;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
   }
 }
