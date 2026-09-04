@@ -39,6 +39,13 @@ The rating UI is at `http://127.0.0.1:8765`; the homepage prototype is at
 `http://127.0.0.1:8088`. Neither is deployed. Generated arrays, renders,
 ratings, and adapters are ignored by Git.
 
+The paired results viewer is at `http://127.0.0.1:8088/results.html`.
+It provides synchronized scientific and sandboxed JavaScript painter frames,
+play/pause, scrubbing, three preview clips, and recorded clip-bootstrap metrics.
+The current source is the older 624-frame archive, restricted to the permitted
+training prefix; the newer 1,936-frame NERSC corpus still requires access and
+verification of its governing split. It has not been used in these results.
+
 Run focused checks with:
 
 ```bash

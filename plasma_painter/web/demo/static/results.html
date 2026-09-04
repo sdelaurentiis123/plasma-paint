@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Plasma painter · Results</title><link rel="stylesheet" href="results.css"></head>
+<body>
+<header><a href="/">Stan DeLaurentiis</a><span>Plasma painter / experiment 01</span></header>
+<main>
+  <div class="heading"><div><p class="eyebrow">TCV · SHOT 85604</p><h1>From plasma to pigment.</h1></div><span class="badge">Deterministic baseline</span></div>
+  <p class="intro">The same evolving density structures, seen through a scientific rendering and an editable watercolor program.</p>
+  <div class="toolbar"><label>Clip <select id="clip" disabled></select></label><button id="play" disabled>Play</button><label class="scrub">Frame <input id="frame" type="range" min="0" max="7" value="0" disabled></label><output id="position">Loading frames…</output></div>
+  <div class="pair"><figure><img id="painting" alt="Watercolor driven by the selected TCV density frame"><figcaption><span>01 / Watercolor</span><a href="painter.generated.js" target="_blank" rel="noopener">View painter code ↗</a></figcaption></figure><figure><img id="scientific" alt="Scientific density rendering of the same TCV frame"><figcaption><span>02 / Scientific reference</span><span>Matched frame & seed</span></figcaption></figure></div>
+  <p id="error" role="alert"></p>
+  <section class="measurement"><div><p class="eyebrow">RECORDED EVALUATION</p><h2>How closely does it follow the data?</h2><p id="scope"></p></div><div id="metrics" class="metrics"></div></section>
+  <div class="notes"><section><h2>What has run</h2><p>The feature pipeline, constrained painting language, deterministic renderer, and reward checks have run locally. SFT, DPO, and GRPO have entry points and smoke checks; no language-model adapter has been trained yet.</p><p>Human aesthetic preferences have not been collected. These measurements do not establish an aesthetic improvement.</p></section><section><h2>Data coverage</h2><p>These previews use the older 624-frame 85604 archive. The art experiment is restricted to its permitted first 432 frames, with separate art training, validation, test, and guard intervals.</p><p>The larger 1,936-frame NERSC run is pending access and split verification. NERSC currently rejects the SSH credential. Shot 85606 data remains unopened.</p></section></div>
+  <details><summary>Metric details and experiment status</summary><p>Intervals are 95% bootstrap intervals over clips, averaging matched seeds. Fidelity and temporal scores are diagnostic composites, not percentages of physical accuracy. Filament and orientation measures include recorded brush operations; pixel intensity correspondence is a separate check.</p><table><thead><tr><th>Measurement</th><th>Mean</th><th>95% interval</th></tr></thead><tbody id="details"></tbody></table><div id="methods"></div><p id="hash" class="hash"></p></details>
+  <footer>Local research preview · prerecorded simulation frames · playback slowed for inspection</footer>
+</main><script type="module" src="results.js"></script>
+</body></html>

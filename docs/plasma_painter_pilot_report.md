@@ -34,6 +34,23 @@ Signals above an absolute correlation of 0.9 are listed in the machine audit. Fi
 
 The categorical smoke placed 84.6% probability on one of four near-duplicate fixtures after 25 steps. This is not an aesthetic result; it is a useful collapse warning. The real online run should retain KL or entropy control and use a structurally broader pool before increasing rollout count.
 
-## Decision
+## Local results viewer update — 2026-09-04
+
+`/results.html` shows three synchronized eight-frame pairs (training 0–7,
+art validation 320–327, art test 384–391), with explicit playback and scrubbing.
+Painting frames are produced by executing the reference JavaScript program in
+the sandbox and replaying its operations through CanvasRuntime. The scientific
+reference uses the same source frame. Evaluation metrics retain their original
+six-test-clip, three-seed scope; the preview is rendered at a higher resolution.
+Generated preview assets remain outside Git tracking.
+
+The current experiment uses the old 624-frame archive, not the newer 1,936-frame
+fit_profile+4/+5 corpus. A fresh NERSC check reached the host but authentication
+failed. Full-corpus access and the applicable temporal split remain unresolved;
+the old archive's frozen guard and validation blocks have not been repurposed.
+No paid cloud resources were provisioned. The dashboard does not claim a trained
+adapter or aesthetic improvement.
+
+## Recommendation
 
 **REVISE.** Do not advance to the controlled pilot until local base weights are staged, at least 80% of actual generated/repaired programs render, the human reference pool contains enough `love` examples, and SFT plus DPO precede the bounded online run. The preregistered success criteria remain unchanged.

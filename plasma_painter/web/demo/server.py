@@ -9,10 +9,12 @@ from flask import Flask, send_from_directory
 
 from plasma_painter.config import load_config
 from .build_demo import build
+from .build_results import build_results
 
 
 def create_app(config: dict) -> Flask:
     build(config)
+    build_results(config)
     static = Path(__file__).with_name("static")
     app = Flask(__name__, static_folder=None)
 
