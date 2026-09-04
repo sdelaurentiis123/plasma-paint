@@ -38,7 +38,7 @@ def representative_summary(frame: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_prompt(frame: dict[str, Any], *, optimized: bool = False, schema_v2: bool = False) -> str:
+def build_prompt(frame: dict[str, Any], *, optimized: bool = False, schema_v2: bool = False, media: bool = False) -> str:
     rules = """
 Return only JavaScript. Export exactly createPainter(api, styleConfig). The returned
 object must define reset(seed) and renderFrame(frameFeatures, time, persistentState).
@@ -64,7 +64,7 @@ is false; avoid decorative randomness except bounded paper grain; keep under 900
             rules,
         ]
     )
-    if schema_v2:
+    if schema_v2 or media:
         reference = (Path(__file__).parents[1] / "renderer/reference_renderers/tcv_watercolor.js").read_text()
         prompt += """
 
@@ -112,4 +112,8 @@ export function createPainter(api, styleConfig) {
 Do not return explanatory prose or omit export. No arbitrary new API or features.
 
 """ + reference
+    if media:
+        prompt = prompt.replace(STYLE_BRIEF, "Create an intentional tool-medium study of the supplied plasma fields. Choose a coherent stroke vocabulary and preserve structure, sign, separatrix and temporal response. Gradient directions are visualization proxies, not physical flow. Never invent structures.")
+        prompt = prompt.replace("Make modest\nbut visible changes to wash opacity, brush widths, filament bloom strength, and\nlayering to create richer mineral watercolor.", "Redesign the mark-making with an intentional medium: bristle painting, graphite, charcoal, ink, or pastel. Change stroke construction, widths, rhythm and layering, not only colors. Use bounded pressure and texture controls on paths; retain the data-driven geometry.")
+        prompt += "\nMEDIUM STUDY: use medium, pressure, texture on strokePath/dryBrushPath. The reference is an interface example, not a composition to copy. Keep washes restrained enough that strokes remain visible. Do not claim this is a trained artist imitation.\n"
     return prompt

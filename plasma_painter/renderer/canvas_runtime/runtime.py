@@ -16,6 +16,8 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from plasma_painter.features.pipeline import decode_unit_raster
 
+RUNTIME_VERSION = "canvas-runtime-0.2.0-media"
+
 
 def _rgb(value: str, fallback: str = "#30343b") -> tuple[int, int, int]:
     text = value if isinstance(value, str) and len(value.lstrip("#")) == 6 else fallback
@@ -90,6 +92,32 @@ class CanvasRuntime:
         width = max(1, int(float(args.get("width", 0.003)) * min(self.width, self.height)))
         opacity = int(255 * float(args.get("opacity", 0.2)))
         color = self._pigment(args.get("pigment"))
+        medium = args.get("medium", "watercolor")
+        if medium != "watercolor":
+            pressure = float(args.get("pressure", 0.7))
+            texture = float(args.get("texture", 0.4))
+            # Cross-stroke offsets remain bounded by the supplied brush width.
+            # No independent particles: every mark follows the input polyline.
+            fibers = {"bristle": 12, "graphite": 5, "charcoal": 7, "ink": 1, "pastel": 8}[medium]
+            for fiber in range(fibers):
+                offset = (fiber / max(1, fibers - 1) - 0.5) * width if fibers > 1 else 0
+                shifted = []
+                for i, (x, y) in enumerate(points):
+                    a, b = points[max(0, i - 1)], points[min(len(points) - 1, i + 1)]
+                    dx, dy = b[0] - a[0], b[1] - a[1]
+                    norm = max(1e-9, float(np.hypot(dx, dy)))
+                    shifted.append((x - dy / norm * offset, y + dx / norm * offset))
+                for i in range(len(shifted) - 1):
+                    taper = 0.3 + 0.7 * np.sin(np.pi * (i + 0.5) / (len(shifted) - 1))
+                    line_width = max(1, int(width * pressure * taper / (1 if medium == "ink" else fibers / 2)))
+                    tone = tuple(min(255, max(0, c + (fiber % 3 - 1) * 12)) for c in color)
+                    draw.line(shifted[i:i+2], fill=(*tone, int(opacity * pressure)), width=line_width)
+            if medium in {"graphite", "charcoal", "pastel", "bristle"}:
+                mask = np.asarray(layer.getchannel("A"), dtype=np.uint8)
+                tooth = rng.random(mask.shape)
+                dropout = texture * {"graphite": .48, "charcoal": .65, "pastel": .35, "bristle": .22}[medium]
+                layer.putalpha(Image.fromarray(np.where(tooth < dropout, 0, mask).astype(np.uint8)))
+            return layer.filter(ImageFilter.GaussianBlur(.4)) if medium == "charcoal" else layer
         passes = 1 if dry else 2
         for pass_index in range(passes):
             sigma = 0.25 + 0.35 * pass_index

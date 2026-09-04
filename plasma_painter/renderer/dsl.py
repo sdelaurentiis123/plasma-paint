@@ -34,6 +34,7 @@ OPERATION_SPECS = {
 
 ALLOWED_OPERATIONS = frozenset(OPERATION_SPECS)
 ALLOWED_RASTERS = frozenset({"density", "density_fluctuation", "potential", "electron_temperature"})
+STROKE_MEDIA = ("watercolor", "bristle", "graphite", "charcoal", "ink", "pastel")
 
 
 def _color(value: Any, name: str) -> str:
@@ -95,6 +96,10 @@ def validate_operation(operation: dict[str, Any], *, max_path_points: int = 256)
             for index, point in enumerate(points):
                 _point(point, f"path[{index}]")
     elif name in {"strokePath", "dryBrushPath"}:
+        if args.get("medium", "watercolor") not in STROKE_MEDIA:
+            raise ValueError("unsupported stroke medium")
+        _number(args.get("pressure", 0.7), 0.05, 1.0, "pressure")
+        _number(args.get("texture", 0.4), 0.0, 1.0, "texture")
         points = args.get("points")
         if not isinstance(points, list) or not 2 <= len(points) <= max_path_points:
             raise ValueError("path point count is outside the configured bound")
@@ -136,4 +141,5 @@ def api_documentation() -> str:
     lines = ["Allowed painter API (normalized coordinates only):"]
     for spec in OPERATION_SPECS.values():
         lines.append(f"- {spec.name}: {spec.description} Maximum calls/frame: {spec.maximum_calls}.")
+    lines.append("strokePath/dryBrushPath optional controls: medium in " + ", ".join(STROKE_MEDIA) + "; pressure 0.05..1; texture 0..1. These change mark construction, not field geometry. Default preserves legacy watercolor. Select tools intentionally; do not merely swap colors.")
     return "\n".join(lines)

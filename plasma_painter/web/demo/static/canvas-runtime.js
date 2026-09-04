@@ -48,6 +48,7 @@ export class BrowserCanvasRuntime {
       if (item.op === 'washRegion') this.drawRaster(frame, args.opacity || .15, args.bleed || .2);
       else if (item.op === 'fadeLayer') { const p = this.persistent.getContext('2d'); p.globalCompositeOperation = 'destination-in'; p.fillStyle = `rgba(0,0,0,${args.retention ?? .85})`; p.fillRect(0, 0, this.canvas.width, this.canvas.height); p.globalCompositeOperation = 'source-over'; }
       else if (item.op === 'strokePath' || item.op === 'dryBrushPath') {
+        if (args.medium && args.medium !== 'watercolor') { this.mediumPath(args); continue; }
         const positive = (args.pigment || '').includes('positive'), negative = (args.pigment || '').includes('negative');
         this.ctx.strokeStyle = positive ? `rgba(148,66,56,${args.opacity || .2})` : negative ? `rgba(75,93,132,${args.opacity || .2})` : `rgba(42,70,72,${args.opacity || .15})`;
         this.ctx.lineWidth = Math.max(1, (args.width || .003) * this.canvas.height); this.ctx.beginPath(); args.points.forEach((point, i) => { const q = this.point(point); i ? this.ctx.lineTo(...q) : this.ctx.moveTo(...q); }); this.ctx.stroke();
@@ -59,6 +60,28 @@ export class BrowserCanvasRuntime {
     }
     this.ctx.drawImage(this.persistent, 0, 0); this.ctx.strokeStyle = 'rgba(55,49,42,.18)'; this.ctx.lineWidth = 1;
     const separatrix = frame.geometry.separatrix_face_u * this.canvas.width; this.ctx.beginPath(); this.ctx.moveTo(separatrix, 0); this.ctx.lineTo(separatrix, this.canvas.height); this.ctx.stroke();
+  }
+  mediumPath(args) {
+    const ctx=this.ctx, points=args.points.map(p=>this.point(p));
+    const fibers={bristle:12,graphite:5,charcoal:7,ink:1,pastel:8}[args.medium];
+    if (!fibers) throw new Error('Unsupported stroke medium');
+    const width=(args.width??.003)*Math.min(this.canvas.width,this.canvas.height);
+    const pressure=args.pressure??.7, texture=args.texture??.4;
+    const palette=this.style.palette||{}, color=palette[args.pigment]||palette.mid_density||'#30343b';
+    ctx.save();ctx.strokeStyle=color;ctx.lineCap='round';
+    for(let fiber=0;fiber<fibers;fiber++) {
+      const offset=fibers>1?(fiber/(fibers-1)-.5)*width:0;
+      const shifted=points.map(([x,y],i)=>{const a=points[Math.max(0,i-1)],b=points[Math.min(points.length-1,i+1)],dx=b[0]-a[0],dy=b[1]-a[1],norm=Math.max(1e-9,Math.hypot(dx,dy));return[x-dy/norm*offset,y+dx/norm*offset];});
+      ctx.globalAlpha=(args.opacity??.2)*pressure;
+      ctx.setLineDash(args.medium==='ink'?[]:[Math.max(1,4*(1-texture)),Math.max(.1,texture*2)]);
+      ctx.lineDashOffset=fiber*.71;
+      for(let i=0;i<shifted.length-1;i++) {
+        const taper=.3+.7*Math.sin(Math.PI*(i+.5)/(shifted.length-1));
+        ctx.lineWidth=Math.max(1,width*pressure*taper/(args.medium==='ink'?1:fibers/2));
+        ctx.beginPath();ctx.moveTo(...shifted[i]);ctx.lineTo(...shifted[i+1]);ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
   sketchFrame(frame) {
     const ctx=this.ctx,w=this.canvas.width,h=this.canvas.height;

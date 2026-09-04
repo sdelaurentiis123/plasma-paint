@@ -16,6 +16,7 @@ from plasma_painter.config import artifact_root, load_config, stable_hash, write
 from plasma_painter.provenance import experiment_provenance
 
 from .canvas_runtime import CanvasRuntime
+from .canvas_runtime.runtime import RUNTIME_VERSION
 from .sandbox import run_program
 
 
@@ -44,7 +45,7 @@ def render_program_clip(
     runtime = CanvasRuntime(int(limits["width"]), int(limits["height"]), style, seed)
     images = runtime.render_clip(clip["frames"], sandbox.operations_by_frame)
     program_hash = stable_hash(code)
-    output = artifact_root(config) / "renders" / "programs" / program_hash / clip["clip_id"] / f"seed-{seed}"
+    output = artifact_root(config) / "renders" / "programs" / RUNTIME_VERSION / program_hash / clip["clip_id"] / f"seed-{seed}"
     output.mkdir(parents=True, exist_ok=True)
     paths = []
     for index, image in enumerate(images):
@@ -70,7 +71,7 @@ def render_program_clip(
         "model_checkpoint": checkpoint,
         "origin": origin,
         "seed": seed,
-        "renderer_runtime_version": "canvas-runtime-0.1.0",
+        "renderer_runtime_version": RUNTIME_VERSION,
         "sandbox_elapsed_ms": sandbox.elapsed_ms,
         "operation_count": sum(map(len, sandbox.operations_by_frame)),
         "still": paths[0],
