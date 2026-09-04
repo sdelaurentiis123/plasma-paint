@@ -48,6 +48,8 @@ def _local_samples(config: dict[str, Any], prompt: str, count: int) -> Iterator[
             torch.cuda.manual_seed_all(int(config["project"]["seed"]) + index)
         output = model.generate(
             encoded,
+            attention_mask=torch.ones_like(encoded),
+            pad_token_id=tokenizer.eos_token_id,
             do_sample=True,
             temperature=float(config["generation"]["temperature"]),
             top_p=float(config["generation"]["top_p"]),
@@ -82,7 +84,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
     frame = json.loads(Path(train_record["path"]).read_text(encoding="utf-8"))["frames"][0]
     selected_prompt = prompt_version or config["generation"].get("prompt_version", "optimized_v1")
     optimized = selected_prompt == "optimized_v1"
-    prompt = build_prompt(frame, optimized=optimized)
+    prompt = build_prompt(frame, optimized=optimized, schema_v2=selected_prompt == "schema_v2")
     count = int(count or config["generation"]["candidates"])
     selected = backend
     if selected == "auto":
@@ -99,6 +101,8 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
     output = root / "programs" / "candidates"
     output.mkdir(parents=True, exist_ok=True)
     prompt_hash = stable_hash(prompt)
+    prompt_path = root / "programs" / f"prompt-{selected_prompt}-{prompt_hash}.txt"
+    prompt_path.write_text(prompt + "\n", encoding="utf-8")
     records = []
     for index, code in enumerate(programs):
         program_hash = stable_hash(code)
@@ -118,9 +122,6 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
         write_json(output / f"{program_hash}.json", record)
         records.append(record)
         print(f"Saved {selected_prompt} painter {index + 1}/{count}: {program_hash}", flush=True)
-    prompt_path = root / "programs" / "prompt.txt"
-    prompt_path.parent.mkdir(parents=True, exist_ok=True)
-    prompt_path.write_text(prompt + "\n", encoding="utf-8")
     summary = {"backend": selected, "origin": origin, "count": len(records), "prompt_path": str(prompt_path), "records": records}
     summary["provenance"] = experiment_provenance(config, wall_seconds=time.perf_counter() - started, stage="program_sampling")
     write_json(root / "programs" / f"sample_manifest-{selected_prompt}.json", summary)
@@ -134,7 +135,7 @@ def main() -> int:
     parser.add_argument("--config", required=True)
     parser.add_argument("--backend", choices=("auto", "local", "fixture"), default="auto")
     parser.add_argument("--count", type=int)
-    parser.add_argument("--prompt-version", choices=("baseline_v1", "optimized_v1"))
+    parser.add_argument("--prompt-version", choices=("baseline_v1", "optimized_v1", "schema_v2"))
     args = parser.parse_args()
     result = sample_programs(load_config(args.config), backend=args.backend, count=args.count, prompt_version=args.prompt_version)
     print(json.dumps({"backend": result["backend"], "origin": result["origin"], "count": result["count"], "accepted_fraction": result["filter_report"]["accepted_fraction"]}, indent=2))

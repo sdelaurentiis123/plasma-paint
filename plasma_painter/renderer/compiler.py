@@ -38,9 +38,9 @@ def validate_program(code: str, *, max_bytes: int = 24_000, node_check: bool = T
         errors.append(f"program exceeds {max_bytes} bytes")
     if not re.search(r"export\s+function\s+createPainter\s*\(\s*api\s*,\s*styleConfig\s*\)", code):
         errors.append("missing exact exported createPainter(api, styleConfig) function")
-    if not re.search(r"\breset\s*\(\s*seed\s*\)", code):
+    if not re.search(r"\breset\s*(?::\s*function\s*)?\(\s*seed\s*\)", code):
         errors.append("missing reset(seed)")
-    if not re.search(r"\brenderFrame\s*\(\s*frameFeatures\s*,\s*time\s*,\s*persistentState\s*\)", code):
+    if not re.search(r"\brenderFrame\s*(?::\s*function\s*)?\(\s*frameFeatures\s*,\s*time\s*,\s*persistentState\s*\)", code):
         errors.append("missing renderFrame(frameFeatures, time, persistentState)")
     for label, pattern in FORBIDDEN_PATTERNS.items():
         if re.search(pattern, code):
