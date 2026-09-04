@@ -59,13 +59,13 @@ def validate_program(code: str, *, max_bytes: int = 24_000, node_check: bool = T
         with tempfile.TemporaryDirectory(prefix="plasma-painter-check-") as temporary:
             path = Path(temporary) / "candidate.js"
             path.write_text(transformed, encoding="utf-8")
-            result = subprocess.run(
-                ["node", "--check", str(path)],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=3,
-            )
-        if result.returncode != 0:
-            errors.append("JavaScript syntax check failed: " + result.stderr.strip().splitlines()[-1])
+            try:
+                result = subprocess.run(
+                    ["node", "--check", str(path)],
+                    check=False, capture_output=True, text=True, timeout=3,
+                )
+                if result.returncode != 0:
+                    errors.append("JavaScript syntax check failed: " + result.stderr.strip()[:2000])
+            except subprocess.TimeoutExpired:
+                errors.append("JavaScript syntax check timed out after 3 seconds")
     return ProgramValidation(valid=not errors, errors=errors, api_calls=api_calls, code_bytes=len(encoded))

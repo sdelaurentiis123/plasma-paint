@@ -1,5 +1,6 @@
 """Render matched base/adapter seeds on the same permitted cached training clip."""
 import json
+import argparse
 from pathlib import Path
 
 import imageio.v2 as imageio
@@ -12,7 +13,15 @@ from plasma_painter.renderer.canvas_runtime import CanvasRuntime
 from plasma_painter.renderer.sandbox import run_program
 
 
+def remove_trailing_wrapper(code):
+    body,closing,suffix=code.rpartition('\n}')
+    if closing and (suffix.strip()=='```' or suffix.strip().startswith(('This script ', 'This modified program '))):
+        return body+closing+'\n'
+    return code
+
+
 def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--repair-wrappers',action='store_true');args=parser.parse_args()
     config=load_config('configs/plasma_painter/pilot.yaml');root=artifact_root(config)
     index=json.loads((root/'features/index.json').read_text())
     entry=next(c for c in index['clips'] if c['split']=='art_train')
@@ -30,6 +39,9 @@ def main():
             assert record['origin']==origin
             code=(root/folder/'programs/candidates'/Path(record['program_path']).name).read_text()
             assert stable_hash(code)==record['program_hash'] or (origin=='frozen_local_base_model' and stable_hash(code.rstrip())==record['program_hash'])
+            original_hash=stable_hash(code)
+            if args.repair_wrappers: code=remove_trailing_wrapper(code)
+            repaired=stable_hash(code)!=original_hash
             result=run_program(code,clip['frames'],style=style,seed=seed)
             images=[]
             error=result.error
@@ -38,11 +50,14 @@ def main():
                 except (ValueError,TypeError,KeyError,RuntimeError) as exc: error=str(exc)
             for i,board in enumerate(boards):
                 x,y=col*384,row*280
-                ImageDraw.Draw(board).text((x+12,y+10),f'{label} / seed {seed}',fill='#222222')
+                ImageDraw.Draw(board).text((x+12,y+10),f'{label} / seed {seed}'+(' / wrapper removed' if repaired else ''),fill='#222222')
                 if images: board.paste(images[i],(x,y+32))
                 else: ImageDraw.Draw(board).text((x+12,y+90),'INVALID PROGRAM (not replaced)',fill='#aa2222')
-            records.append({'method':label,'seed':seed,'program_hash':stable_hash(code),'rendered':bool(images),'error':error})
-    output=root/'adapter-comparison';output.mkdir(parents=True,exist_ok=True)
+            if repaired:
+                repaired_dir=root/'adapter-comparison-wrapper-cleaned/programs';repaired_dir.mkdir(parents=True,exist_ok=True)
+                (repaired_dir/(stable_hash(code)+'.js')).write_text(code)
+            records.append({'method':label,'seed':seed,'program_hash':stable_hash(code),'original_program_hash':original_hash,'wrapper_removed':repaired,'rendered':bool(images),'error':error})
+    output=root/('adapter-comparison-wrapper-cleaned' if args.repair_wrappers else 'adapter-comparison');output.mkdir(parents=True,exist_ok=True)
     boards[0].save(output/'comparison.png')
     imageio.mimsave(output/'comparison.gif',[np.asarray(b) for b in boards],duration=.45,loop=0)
     (output/'manifest.json').write_text(json.dumps({'clip':clip['clip_id'],'status':'matched_training_clip_preview_not_held_out_evaluation','records':records},indent=2)+'\n')
