@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from plasma_painter.config import artifact_root, git_state, sha256_file
+from plasma_painter.renderer.canvas_runtime.runtime import RUNTIME_VERSION
 
 
 def _hashed(path: Path) -> dict[str, Any] | None:
@@ -37,7 +38,7 @@ def experiment_provenance(config: dict[str, Any], *, wall_seconds: float, stage:
         "feature_normalization": _hashed(root / "features" / "normalization.json"),
         "reward_normalization": _hashed(root / "rewards" / "normalization.json"),
         "exact_split": config["data"]["art_split"], "seeds": {"project": config["project"]["seed"], "evaluation_count": config["evaluation"]["seed_count"]},
-        "renderer_runtime_version": "canvas-runtime-0.1.0", "reward_version": "gated-reward-0.1.0",
+        "renderer_runtime_version": RUNTIME_VERSION, "reward_version": "gated-reward-0.1.0",
         "human_rating_snapshot": _hashed(ratings), "hardware": {"platform": platform.platform(), **hardware},
         "wall_seconds": float(wall_seconds), "estimated_compute": {"gpu_hours": 0.0 if not hardware["cuda"] else None, "scope": "local smoke" if not hardware["cuda"] else "GPU run"},
         "dependency_lock": _hashed(Path("requirements-lock.txt")), "packages": packages,
