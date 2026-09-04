@@ -94,6 +94,23 @@ This machine is suitable for preprocessing, rendering, rating, reward audits,
 and CPU-scale optimizer smoke tests. It is not the selected environment for a
 full 7B QLoRA/GRPO pilot. No training job was launched during the audit.
 
+Perlmutter was also checked without launching a job. The account has GPU
+associations for projects `m4466_g` and `m4810_g`, and an available device was
+reported as an NVIDIA A100 PCIe with 40 GB. The shared scratch filesystem
+reported approximately 15 PB free globally; this is not a statement of the
+user's project quota. NERSC's `pytorch/2.8.0` module provides CUDA Torch 2.8,
+Transformers 4.56, Datasets, SciPy, scikit-image, Pillow, imageio, and
+Matplotlib; PEFT and TRL are not present in its base module. No staged
+Qwen2.5-Coder-7B weights were found in the user's home or scratch directories.
+
+The committed source tree was staged at
+`/pscratch/sd/s/sod2112/plasma-paint`. A copy of the explicitly permitted
+85604 NPZ pair to the sibling `plasma-paint-data` directory was interrupted by
+an SSH authentication expiry and must be hash-checked or replaced after the
+credential is refreshed. This did not affect local work and did not touch any
+held-out data. No Slurm allocation, GPU-hour, model download, Modal transfer,
+or Prime Intellect instance was started.
+
 ## Reference audit
 
 The supplied public references were inspected without sending any local data.
@@ -128,4 +145,3 @@ The smallest complete pilot will:
 not released by this audit; it requires installed training extras, an explicit
 GPU allocation, candidate render-validity evidence, a completed reward audit,
 and a human preference snapshot.
-
