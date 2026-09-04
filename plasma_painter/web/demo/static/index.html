@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eee9de">
+  <title>Stan DeLaurentiis — Turbulent worlds</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="bootstrap.generated.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="name" href="#top">Stan DeLaurentiis</a>
+    <nav aria-label="Primary navigation"><a href="#research">Research</a><a href="#writing">Writing</a><a href="#systems">Systems</a><a href="#cv">CV</a></nav>
+  </header>
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="intro">
+        <p class="eyebrow">Predictive representations for multiscale plasma dynamics</p>
+        <h1 id="hero-title">Learning the dynamics of turbulent worlds.</h1>
+        <p class="lede">I study how structure, transport, and memory emerge in plasma—and build models that keep faith with the physics.</p>
+      </div>
+      <figure class="painting" aria-describedby="painting-description frame-caption">
+        <img class="fallback" src="fallback.generated.webp" alt="Static watercolor rendering of density structures in TCV shot 85604">
+        <canvas id="plasma-canvas" width="960" height="640" aria-label="Slowly evolving watercolor driven by real TCV edge-turbulence features"></canvas>
+        <figcaption id="frame-caption">TCV shot 85604 · loading permitted training frame</figcaption>
+      </figure>
+      <p id="painting-description" class="visually-hidden">A warm-paper watercolor. Long density contours form blue and iron-red strokes; measured positive and negative filaments pool pigment as the plasma evolves. The vertical graphite trace marks the separatrix face.</p>
+      <details class="controls">
+        <summary>View controls</summary>
+        <div class="control-grid">
+          <label>Painter style<select id="style"><option value="watercolor">TCV watercolor baseline</option><option disabled>TCV ink — after pilot</option><option disabled>TCV gouache — after pilot</option></select></label>
+          <button id="play" type="button">Pause</button>
+          <label>Frame<input id="scrubber" type="range" min="0" max="7" value="0"></label>
+          <label>Data field<select id="field"><option value="density">Density</option><option value="density_fluctuation">Density fluctuation</option><option value="potential">Potential proxy view</option><option value="electron_temperature">Electron temperature</option></select></label>
+          <button id="code" type="button">View code</button><button id="scientific" type="button">View scientific rendering</button>
+        </div>
+        <p class="status">Deterministic scientific baseline · adapter training pending · no live-data claim</p>
+      </details>
+    </section>
+  </main>
+  <dialog id="code-dialog"><button id="close-code" aria-label="Close code">Close</button><h2>Editable painter program</h2><pre id="program-source"></pre></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

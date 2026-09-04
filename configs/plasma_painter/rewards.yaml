@@ -1,0 +1,26 @@
+gate:
+  strong_negative: -2.0
+  minimum_nonempty_fraction: 0.005
+  # Absolute anti-hacking floors sit just below the weakest deterministic
+  # art-train clip. Method comparisons additionally use a per-clip 5% relative
+  # non-inferiority margin against that deterministic reference.
+  minimum_coarse_spearman: 0.08
+  minimum_extrema_recall: 0.10
+  minimum_filament_correspondence: 0.50
+  minimum_orientation_agreement: 0.25
+weights:
+  fidelity: 0.40
+  aesthetic: 0.30
+  temporal: 0.15
+  diversity: 0.10
+  efficiency: 0.05
+fidelity_weights:
+  coarse_intensity: 0.30
+  contour: 0.20
+  extrema: 0.15
+  filament: 0.20
+  orientation: 0.10
+  transport: 0.05
+normalization:
+  method: training_reference_median_mad
+  clip: 5.0

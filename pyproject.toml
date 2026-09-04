@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plasma-painter"
+version = "0.1.0"
+description = "Data-constrained JavaScript plasma painters with preference optimization"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "Flask>=3.0",
+  "imageio>=2.34",
+  "matplotlib>=3.8",
+  "numpy>=1.24",
+  "Pillow>=10.0",
+  "PyYAML>=6.0",
+  "scikit-image>=0.22",
+  "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+train = [
+  "datasets>=3.0",
+  "peft>=0.13",
+  "torch>=2.2",
+  "transformers>=4.45",
+  "trl>=0.12",
+]
+dev = ["pytest>=7.4"]
+
+[tool.setuptools.packages.find]
+include = ["plasma_painter*"]
+
+[tool.setuptools.package-data]
+"plasma_painter.renderer" = ["sandbox_runner.mjs", "reference_renderers/*.js"]
+"plasma_painter.web.demo" = ["static/*.html", "static/*.css", "static/*.js"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+pythonpath = ["."]

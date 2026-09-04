@@ -1,0 +1,19 @@
+.DS_Store
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Plasma arrays, generated feature caches, renders, checkpoints, and ratings.
+data/**
+!data/.gitkeep
+artifacts/plasma_painter/**
+!artifacts/plasma_painter/.gitkeep
+plasma_painter/web/demo/static/*.generated.*
+
+# Local rating data is append-only and may contain rater identifiers.
+ratings.jsonl

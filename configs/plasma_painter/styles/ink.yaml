@@ -1,0 +1,25 @@
+name: tcv-ink
+status: extension_only_untrained
+style_brief: sparse calligraphic contour economy, dry directional hatching, minimal wet pooling, and fast decay
+reference_pool: artifacts/plasma_painter/reference_pool/love/tcv-ink
+operation_priors:
+  washRegion: 0.25
+  strokePath: 1.45
+  dryBrushPath: 1.55
+  dab: 0.55
+  poolPigment: 0.20
+paper: "#eee9dc"
+palette:
+  low_density: "#1b2527"
+  mid_density: "#33454a"
+  high_density: "#6e2f2b"
+  negative_fluctuation: "#40545a"
+  positive_fluctuation: "#6e2f2b"
+  transport_accent: "#a13c2e"
+opacity:
+  wash: 0.05
+  contour: 0.58
+  filament: 0.22
+grain: 0.035
+bleed: 0.08
+persistence: 0.68

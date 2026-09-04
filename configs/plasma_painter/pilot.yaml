@@ -1,0 +1,105 @@
+project:
+  name: plasma-painter-pilot
+  seed: 1701
+  artifact_root: artifacts/plasma_painter
+
+data:
+  shot: "85604"
+  source_kind: npz_fixed_plane
+  source_path: /Users/stanislavdelaurentiis/ben-filament/data/planes_old_85604.npz
+  geometry_path: /Users/stanislavdelaurentiis/ben-filament/data/geom_85604.npz
+  source_sha256: 6c66e0c3309896832f6ef87017b943b933d01ef60fdbe0152af90965f8f85d5e
+  geometry_sha256: 8d45aebc6fe0f45818562923fee6213806aca3339fabc2bba8002248ff25010b
+  upstream_protocol_commit: 43b281c6ce458c3142eca9a6a5f71bdd5cfc2ebc
+  preprocessing_script_sha256: a9f0460a33b928240d6cc21ad9256c17396a452187e98b06b592bc9b680f0348
+  plane_y: 18
+  field_keys:
+    density: Ne_y18
+    potential: phi_y18
+    electron_temperature: Te_y18
+    electron_pressure: Pe_y18
+    parallel_ion_velocity: Vi_y18
+  coordinates:
+    axes: [x_radial, z_periodic_field_aligned]
+    x_increases: radially_outward
+    z_periodic: true
+    zperiod: 5
+    crop_guard_x: 2
+    first_sol_x: 16
+    separatrix_face_left_x: 15
+  forecasting_split:
+    train: [0, 432]
+    guard: [432, 496]
+    validation: [496, 624]
+  art_split:
+    art_train: [0, 288]
+    guard_train_val: [288, 320]
+    art_val: [320, 352]
+    guard_val_test: [352, 384]
+    art_test: [384, 432]
+  clip_length: 8
+  clip_stride: 8
+  max_train_clips: 16
+
+features:
+  density_log_transform: true
+  robust_low_percentile: 1.0
+  robust_high_percentile: 99.0
+  mad_clip: 5.0
+  contour_levels: [-0.75, -0.35, 0.35, 0.75]
+  gradient_stride: 4
+  filament_smoothing_sigma: 1.0
+  filament_threshold_quantile: 0.94
+  filament_min_cells: 4
+  track_max_periodic_distance: 0.16
+
+renderer:
+  width: 768
+  height: 512
+  preview_width: 960
+  preview_height: 640
+  max_canvas_side: 1024
+  max_operations: 1200
+  max_path_points: 256
+  max_runtime_ms: 1500
+  baseline_program: plasma_painter/renderer/reference_renderers/tcv_watercolor.js
+  style_config: configs/plasma_painter/styles/watercolor.yaml
+
+generation:
+  base_model: Qwen/Qwen2.5-Coder-7B-Instruct
+  local_model_path: null
+  candidates: 24
+  temperature: 0.8
+  top_p: 0.95
+  max_new_tokens: 1800
+  prompt_version: optimized_v1
+
+training:
+  style: tcv-watercolor
+  adapters:
+    - tcv-watercolor
+    - tcv-ink
+    - tcv-gouache
+  lora_rank: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  learning_rate: 0.00002
+  sft_steps: 40
+  dpo_steps: 30
+  grpo_steps: 25
+  group_size: 4
+  max_gpu_hours: 8
+
+ratings:
+  rater_id: local-rater
+  repeat_fraction: 0.10
+  target_triage: [100, 200]
+  target_pairwise: [150, 300]
+  jsonl_path: artifacts/plasma_painter/ratings/ratings.jsonl
+
+evaluation:
+  bootstrap_samples: 1000
+  seed_count: 3
+  fidelity_floor_fraction: 0.95
+  max_flicker_regression_fraction: 0.10
+

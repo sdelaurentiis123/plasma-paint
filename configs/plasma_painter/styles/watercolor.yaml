@@ -1,0 +1,25 @@
+name: tcv-watercolor
+status: pilot_target
+style_brief: layered mineral washes, wet filament blooms, visible paper, and persistent tracked bleed
+reference_pool: artifacts/plasma_painter/reference_pool/love/tcv-watercolor
+operation_priors:
+  washRegion: 1.0
+  strokePath: 1.0
+  dryBrushPath: 0.7
+  dab: 1.2
+  poolPigment: 1.1
+paper: "#f2ede2"
+palette:
+  low_density: "#233a4d"
+  mid_density: "#2f6f73"
+  high_density: "#d6aa62"
+  negative_fluctuation: "#596b86"
+  positive_fluctuation: "#9e4b3f"
+  transport_accent: "#b64b32"
+opacity:
+  wash: 0.13
+  contour: 0.34
+  filament: 0.42
+grain: 0.055
+bleed: 0.35
+persistence: 0.86

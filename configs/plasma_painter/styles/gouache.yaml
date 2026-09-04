@@ -1,0 +1,25 @@
+name: tcv-gouache
+status: extension_only_untrained
+style_brief: opaque density masses, broad clipped shapes, restrained contour lines, compact filament stamps, and slow layer turnover
+reference_pool: artifacts/plasma_painter/reference_pool/love/tcv-gouache
+operation_priors:
+  washRegion: 1.5
+  strokePath: 0.45
+  dryBrushPath: 0.25
+  dab: 1.0
+  poolPigment: 0.35
+paper: "#e8e0cf"
+palette:
+  low_density: "#21395a"
+  mid_density: "#4e7d73"
+  high_density: "#bd7653"
+  negative_fluctuation: "#455b7b"
+  positive_fluctuation: "#a75443"
+  transport_accent: "#c64f35"
+opacity:
+  wash: 0.34
+  contour: 0.22
+  filament: 0.52
+grain: 0.025
+bleed: 0.12
+persistence: 0.93
