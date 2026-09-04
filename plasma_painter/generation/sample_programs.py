@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import time
-from typing import Any
+from typing import Any, Iterator
 
 from plasma_painter.config import artifact_root, load_config, stable_hash, write_json
 from plasma_painter.provenance import experiment_provenance
@@ -24,7 +24,7 @@ def _strip_fence(text: str) -> str:
     return clean.strip()
 
 
-def _local_samples(config: dict[str, Any], prompt: str, count: int) -> list[str]:
+def _local_samples(config: dict[str, Any], prompt: str, count: int) -> Iterator[str]:
     local_path = os.environ.get("PLASMA_PAINTER_MODEL_PATH") or config["generation"].get("local_model_path")
     if not local_path:
         raise RuntimeError("generation.local_model_path is required for local model sampling; no data or prompt is sent remotely")
@@ -42,7 +42,6 @@ def _local_samples(config: dict[str, Any], prompt: str, count: int) -> list[str]
     model.eval()
     messages = [{"role": "user", "content": prompt}]
     encoded = tokenizer.apply_chat_template(messages, add_generation_prompt=True, return_tensors="pt").to(model.device)
-    samples = []
     for index in range(count):
         torch.manual_seed(int(config["project"]["seed"]) + index)
         if torch.cuda.is_available():
@@ -55,8 +54,7 @@ def _local_samples(config: dict[str, Any], prompt: str, count: int) -> list[str]
             max_new_tokens=int(config["generation"]["max_new_tokens"]),
             num_return_sequences=1,
         )[0]
-        samples.append(_strip_fence(tokenizer.decode(output[encoded.shape[1] :], skip_special_tokens=True)))
-    return samples
+        yield _strip_fence(tokenizer.decode(output[encoded.shape[1] :], skip_special_tokens=True))
 
 
 def _fixture_samples(reference: str, count: int) -> list[str]:
@@ -119,6 +117,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
         }
         write_json(output / f"{program_hash}.json", record)
         records.append(record)
+        print(f"Saved {selected_prompt} painter {index + 1}/{count}: {program_hash}", flush=True)
     prompt_path = root / "programs" / "prompt.txt"
     prompt_path.parent.mkdir(parents=True, exist_ok=True)
     prompt_path.write_text(prompt + "\n", encoding="utf-8")

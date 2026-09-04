@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --partition=gpu
+#SBATCH --partition=gpupreempt
 #SBATCH --account=cca
-#SBATCH --qos=gen
+#SBATCH --qos=gpupreempt
 #SBATCH --gres=gpu:rtx_pro_6000_blackwell:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
