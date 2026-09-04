@@ -3,7 +3,7 @@
 #SBATCH --qos=shared
 #SBATCH --time=02:00:00
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 #SBATCH --gpus-per-task=1
 #SBATCH --job-name=plasma-paint-sft
 #SBATCH --output=artifacts/plasma_painter/job-%j.log
