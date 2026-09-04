@@ -8,16 +8,29 @@ export class BrowserCanvasRuntime {
   random() { this.seed = (this.seed + 0x6d2b79f5) >>> 0; let t = this.seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
   point(p) { return [p[0] * this.canvas.width, p[1] * this.canvas.height]; }
   raster(record) { const raw = atob(record.data), bytes = new Uint8ClampedArray(raw.length); for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i); return {bytes, nx: record.shape[0], nz: record.shape[1]}; }
+  color(value) {
+    const ramps = {
+      density: [[24,35,111],[34,91,172],[12,157,160],[113,190,110],[241,196,62],[224,81,47]],
+      density_fluctuation: [[39,46,132],[70,136,193],[186,221,208],[247,225,164],[225,116,62],[150,35,73]],
+      potential: [[54,24,107],[117,49,145],[199,68,117],[238,128,76],[249,204,94]],
+      electron_temperature: [[24,48,105],[29,125,151],[104,188,140],[237,197,70],[199,58,44]]
+    };
+    const ramp = ramps[this.field] || ramps.density;
+    const position = Math.max(0,Math.min(1,value))*(ramp.length-1), i = Math.min(ramp.length-2,Math.floor(position)), t = position-i;
+    return ramp[i].map((v,k)=>Math.round(v*(1-t)+ramp[i+1][k]*t));
+  }
   drawRaster(frame, opacity, bleed) {
     const r = this.raster(frame.rasters[this.field] || frame.rasters.density), tiny = document.createElement('canvas'); tiny.width = r.nx; tiny.height = r.nz;
     const context = tiny.getContext('2d'), image = context.createImageData(r.nx, r.nz);
     for (let x = 0; x < r.nx; x += 1) for (let z = 0; z < r.nz; z += 1) { const value = r.bytes[x * r.nz + z] / 255, i = (z * r.nx + x) * 4; image.data[i] = 35 + 179 * value; image.data[i + 1] = 58 + 112 * value; image.data[i + 2] = 77 + 21 * value; image.data[i + 3] = (45 + 210 * value) * opacity; }
+    if (this.style.vibrant) for (let x=0;x<r.nx;x++) for(let z=0;z<r.nz;z++) { const value=r.bytes[x*r.nz+z]/255,i=(z*r.nx+x)*4; image.data.set(this.color(value),i); image.data[i+3]=255*Math.min(.85,this.style.washStrength ?? .68); }
     context.putImageData(image, 0, 0); this.ctx.save(); this.ctx.filter = `blur(${1 + bleed * 4}px)`; this.ctx.imageSmoothingEnabled = true; this.ctx.drawImage(tiny, 0, 0, this.canvas.width, this.canvas.height); this.ctx.restore();
   }
   scientificFrame(frame) {
     const r = this.raster(frame.rasters[this.field] || frame.rasters.density), tiny = document.createElement('canvas'); tiny.width = r.nx; tiny.height = r.nz;
     const context = tiny.getContext('2d'), image = context.createImageData(r.nx, r.nz);
     for (let x = 0; x < r.nx; x += 1) for (let z = 0; z < r.nz; z += 1) { const value = r.bytes[x * r.nz + z], i = (z * r.nx + x) * 4; image.data[i] = image.data[i + 1] = image.data[i + 2] = value; image.data[i + 3] = 255; }
+    if(this.style.vibrant) for(let x=0;x<r.nx;x++) for(let z=0;z<r.nz;z++) { const i=(z*r.nx+x)*4; image.data.set(this.color(r.bytes[x*r.nz+z]/255),i); }
     context.putImageData(image, 0, 0); this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); this.ctx.drawImage(tiny, 0, 0, this.canvas.width, this.canvas.height);
     this.ctx.strokeStyle = '#c94d36'; this.ctx.lineWidth = 2; const x = frame.geometry.separatrix_face_u * this.canvas.width; this.ctx.beginPath(); this.ctx.moveTo(x, 0); this.ctx.lineTo(x, this.canvas.height); this.ctx.stroke();
   }

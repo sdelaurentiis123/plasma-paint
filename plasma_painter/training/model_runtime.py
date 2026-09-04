@@ -20,6 +20,9 @@ def load_lora_model(config: dict[str, Any], model_path: Path, *, adapter_path: P
     if torch.cuda.is_available():
         kwargs["device_map"] = "auto"
     model = AutoModelForCausalLM.from_pretrained(model_path, **kwargs)
+    model.config.use_cache = False
+    model.gradient_checkpointing_enable()
+    model.enable_input_require_grads()
     if adapter_path is None:
         lora = LoraConfig(
             r=int(config["training"]["lora_rank"]),
