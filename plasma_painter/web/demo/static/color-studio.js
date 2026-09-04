@@ -1,6 +1,7 @@
 import {BrowserCanvasRuntime} from './canvas-runtime.js';
 import {createPainter} from './painter.generated.js';
 const $=id=>document.getElementById(id);
+const atelier=document.createElement('a');atelier.href='style-lab.html';atelier.textContent='Open the style atelier ↗';document.querySelector('.intro').append(' ',atelier);
 const style={paper:'#f6f0df',grain:.015,bleed:.16,persistence:.55,vibrant:true,washStrength:.68};
 let clip=window.PLASMA_BOOTSTRAP,index=0,playing=false,last=0;
 let sectionRequest=0;

@@ -1,4 +1,5 @@
 const $=id=>document.getElementById(id);
+const atelier=document.createElement('a');atelier.href='style-lab.html';atelier.textContent='Explore four distinct styles across cross-sections →';document.querySelector('.intro').append(' ',atelier);
 let candidates=[],frame=0,playing=false,last=0,revision=0;
 const cache=new Map();
 function image(url){if(!cache.has(url))cache.set(url,new Promise((resolve,reject)=>{const i=new Image();i.onload=()=>resolve(i);i.onerror=reject;i.src=url;}));return cache.get(url);}
