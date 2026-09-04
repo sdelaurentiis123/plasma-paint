@@ -63,7 +63,7 @@ def objective_smoke() -> dict[str, float]:
         loss = -F.logsigmoid(0.1 * margin)
         first = float(loss.detach()) if first is None else first
         loss.backward(); optimizer.step(); optimizer.zero_grad(set_to_none=True)
-    return {"loss_first": float(first), "loss_last": float(loss), "learned_margin": float(margin.detach())}
+    return {"loss_first": float(first), "loss_last": float(loss.detach()), "learned_margin": float(margin.detach())}
 
 
 def execute_dpo(config: dict, pairs: list[dict]) -> dict:

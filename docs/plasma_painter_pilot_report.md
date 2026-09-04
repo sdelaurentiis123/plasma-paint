@@ -11,7 +11,7 @@ Status: **REVISE — this is a pre-training systems pilot, not an RL result.**
 
 ## Current quantitative result
 
-The deterministic editable JavaScript renderer compiled at 100.0% and rendered validly at 100.0%. Its clip-level fidelity mean was 0.681 with a 95% bootstrap interval [0.673, 0.689]. Temporal score was 0.626 [0.522, 0.730]. Median low-resolution evaluation render time was 298.9 ms per eight-frame clip.
+The deterministic editable JavaScript renderer compiled at 100.0% and rendered validly at 100.0%. Its clip-level fidelity mean was 0.681 with a 95% bootstrap interval [0.673, 0.689]. Temporal score was 0.626 [0.522, 0.730]. Median low-resolution evaluation render time was approximately 0.3 seconds per eight-frame clip.
 
 These scores establish an implementation reference only. They do not demonstrate aesthetic improvement.
 
@@ -31,6 +31,8 @@ Signals above an absolute correlation of 0.9 are listed in the machine audit. Fi
 | SFT adapter | Train-only dataset and entrypoint ready; not trained |
 | DPO adapter | Objective smoke passed; zero human pairs |
 | GRPO adapter | 25-step categorical environment smoke passed; LM adapter not trained |
+
+The categorical smoke placed 84.6% probability on one of four near-duplicate fixtures after 25 steps. This is not an aesthetic result; it is a useful collapse warning. The real online run should retain KL or entropy control and use a structurally broader pool before increasing rollout count.
 
 ## Decision
 

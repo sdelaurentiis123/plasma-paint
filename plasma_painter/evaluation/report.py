@@ -16,6 +16,9 @@ def write_report(config: dict) -> Path:
     baseline = evaluation["methods"]["deterministic renderer"]
     fidelity = baseline["clip_level_bootstrap_95"]["fidelity"]
     temporal = baseline["clip_level_bootstrap_95"]["temporal"]
+    grpo_path = root / "training" / "grpo_run.json"
+    grpo = json.loads(grpo_path.read_text(encoding="utf-8")) if grpo_path.exists() else {}
+    maximum_policy_probability = max(grpo.get("final_probabilities", [0.0]))
     text = f"""# Plasma painter pilot report
 
 Status: **REVISE — this is a pre-training systems pilot, not an RL result.**
@@ -29,7 +32,7 @@ Status: **REVISE — this is a pre-training systems pilot, not an RL result.**
 
 ## Current quantitative result
 
-The deterministic editable JavaScript renderer compiled at {baseline['program_compilation_rate']:.1%} and rendered validly at {baseline['valid_render_rate']:.1%}. Its clip-level fidelity mean was {fidelity['mean']:.3f} with a 95% bootstrap interval [{fidelity['low']:.3f}, {fidelity['high']:.3f}]. Temporal score was {temporal['mean']:.3f} [{temporal['low']:.3f}, {temporal['high']:.3f}]. Median low-resolution evaluation render time was {baseline['median_render_ms_low_resolution_evaluation']:.1f} ms per eight-frame clip.
+The deterministic editable JavaScript renderer compiled at {baseline['program_compilation_rate']:.1%} and rendered validly at {baseline['valid_render_rate']:.1%}. Its clip-level fidelity mean was {fidelity['mean']:.3f} with a 95% bootstrap interval [{fidelity['low']:.3f}, {fidelity['high']:.3f}]. Temporal score was {temporal['mean']:.3f} [{temporal['low']:.3f}, {temporal['high']:.3f}]. Median low-resolution evaluation render time was approximately {baseline['median_render_ms_low_resolution_evaluation'] / 1000:.1f} seconds per eight-frame clip.
 
 These scores establish an implementation reference only. They do not demonstrate aesthetic improvement.
 
@@ -49,6 +52,8 @@ Signals above an absolute correlation of 0.9 are listed in the machine audit. Fi
 | SFT adapter | Train-only dataset and entrypoint ready; not trained |
 | DPO adapter | Objective smoke passed; zero human pairs |
 | GRPO adapter | 25-step categorical environment smoke passed; LM adapter not trained |
+
+The categorical smoke placed {maximum_policy_probability:.1%} probability on one of four near-duplicate fixtures after 25 steps. This is not an aesthetic result; it is a useful collapse warning. The real online run should retain KL or entropy control and use a structurally broader pool before increasing rollout count.
 
 ## Decision
 
