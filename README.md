@@ -46,6 +46,18 @@ The current source is the older 624-frame archive, restricted to the permitted
 training prefix; the newer 1,936-frame NERSC corpus still requires access and
 verification of its governing split. It has not been used in these results.
 
+Explore richer field palettes at `http://127.0.0.1:8088/color-studio.html`.
+Build eight field-aligned cross-sections with:
+
+```bash
+python -m plasma_painter.web.demo.build_sections --config configs/plasma_painter/pilot.yaml
+```
+
+These use frames 0–7 with per-section normalization fitted on art_train 0–287.
+Each displayed section is radial × periodic field-aligned coordinates, not an
+R–Z projection. The new color studies are untrained and not scored by the old
+baseline evaluation. Section caches remain ignored by Git.
+
 Run focused checks with:
 
 ```bash
