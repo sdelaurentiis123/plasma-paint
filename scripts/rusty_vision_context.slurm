@@ -11,10 +11,12 @@
 set -euo pipefail
 module load python/3.11.11
 source .venv/bin/activate
+export PYTHONPATH="$PWD/vision-deps"
 export PLASMA_PAINTER_MODEL_PATH="$PWD/models/Qwen2.5-VL-7B-Instruct"
 export HF_HOME="$PWD/.hf-cache"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONHASHSEED=1701
 git rev-parse HEAD
 nvidia-smi
 python -m pip freeze > artifacts/plasma_painter/dependencies-vision.txt
+python -m pip freeze --path vision-deps >> artifacts/plasma_painter/dependencies-vision.txt
 srun python -m plasma_painter.generation.vision_context
