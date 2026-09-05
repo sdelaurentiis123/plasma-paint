@@ -16,6 +16,10 @@ from plasma_painter.renderer.canvas_runtime import CanvasRuntime
 
 
 def filter_candidate(code: str, frames: list[dict[str, Any]], config: dict[str, Any], style: dict[str, Any]) -> dict[str, Any]:
+    profile=config['renderer'].get('profile','legacy')
+    if profile=='stroke_only':
+        from plasma_painter.features.stroke_samples import with_stroke_samples
+        frames=[with_stroke_samples(f) for f in frames]
     result = run_program(
         code,
         frames,
@@ -24,6 +28,7 @@ def filter_candidate(code: str, frames: list[dict[str, Any]], config: dict[str, 
         max_runtime_ms=int(config["renderer"]["max_runtime_ms"]),
         max_operations=int(config["renderer"]["max_operations"]),
         max_path_points=int(config["renderer"]["max_path_points"]),
+        profile=profile,
     )
     nonempty = bool(result.operations_by_frame) and all(bool(items) for items in result.operations_by_frame)
     pixel_valid = False

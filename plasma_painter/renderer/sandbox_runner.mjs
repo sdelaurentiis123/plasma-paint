@@ -6,7 +6,7 @@ for await (const chunk of process.stdin) chunks.push(chunk);
 const request = JSON.parse(Buffer.concat(chunks).toString("utf8"));
 const transformed = request.code.replace(/\bexport\s+function\s+createPainter/, "function createPainter");
 const allowed = new Set([
-  "createPaper", "setPalette", "washRegion", "strokePath", "dryBrushPath",
+  "createPaper", "mark", "setPalette", "washRegion", "strokePath", "dryBrushPath",
   "dab", "poolPigment", "scatterGrain", "fadeLayer", "composite"
 ]);
 let current = [];
@@ -60,4 +60,3 @@ for (let index = 0; index < request.frames.length; index += 1) {
   operationsByFrame.push(current);
 }
 process.stdout.write(JSON.stringify({ operationsByFrame, elapsedMs: performance.now() - started }));
-

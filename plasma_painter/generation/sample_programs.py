@@ -88,7 +88,7 @@ def sample_programs(config: dict[str, Any], *, backend: str = "auto", count: int
     frame = json.loads(Path(train_record["path"]).read_text(encoding="utf-8"))["frames"][0]
     selected_prompt = prompt_version or config["generation"].get("prompt_version", "optimized_v1")
     optimized = selected_prompt == "optimized_v1"
-    prompt = build_prompt(frame, optimized=optimized, schema_v2=selected_prompt == "schema_v2", media=selected_prompt == "media_v3")
+    prompt = build_prompt(frame, optimized=optimized, schema_v2=selected_prompt == "schema_v2", media=selected_prompt == "media_v3", stroke_only=config['renderer'].get('profile')=='stroke_only')
     count = int(count or config["generation"]["candidates"])
     selected = backend
     if selected == "auto":

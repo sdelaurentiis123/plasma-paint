@@ -31,6 +31,10 @@ def render_program_clip(
     origin: str,
 ) -> dict[str, Any]:
     limits = config["renderer"]
+    profile=limits.get('profile','legacy')
+    if profile=='stroke_only':
+        from plasma_painter.features.stroke_samples import with_stroke_samples
+        clip={**clip,'frames':[with_stroke_samples(f) for f in clip['frames']]}
     sandbox = run_program(
         code,
         clip["frames"],
@@ -39,6 +43,7 @@ def render_program_clip(
         max_runtime_ms=int(limits["max_runtime_ms"]),
         max_operations=int(limits["max_operations"]),
         max_path_points=int(limits["max_path_points"]),
+        profile=profile,
     )
     if not sandbox.valid:
         raise RuntimeError(sandbox.error or "sandbox rejected program")

@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from plasma_painter.features.pipeline import decode_unit_raster
 
-RUNTIME_VERSION = "canvas-runtime-0.2.0-media"
+RUNTIME_VERSION = "canvas-runtime-0.3.0-finite-marks"
 
 
 def _rgb(value: str, fallback: str = "#30343b") -> tuple[int, int, int]:
@@ -91,7 +91,7 @@ class CanvasRuntime:
         points = [_point(point, self.width, self.height) for point in args["points"]]
         width = max(1, int(float(args.get("width", 0.003)) * min(self.width, self.height)))
         opacity = int(255 * float(args.get("opacity", 0.2)))
-        color = self._pigment(args.get("pigment"))
+        color = _rgb(args['color']) if 'color' in args else self._pigment(args.get("pigment"))
         medium = args.get("medium", "watercolor")
         if medium != "watercolor":
             pressure = float(args.get("pressure", 0.7))
@@ -173,8 +173,9 @@ class CanvasRuntime:
             name, args = operation["op"], operation.get("args", {})
             if name == "washRegion" and "raster" in args:
                 current = Image.alpha_composite(current, self._wash(frame, args))
-            elif name in {"strokePath", "dryBrushPath"}:
-                current = Image.alpha_composite(current, self._path_layer(args, dry=name == "dryBrushPath", rng=rng))
+            elif name in {"strokePath", "dryBrushPath", "mark"}:
+                mark_rng = np.random.default_rng(self.seed + int(args['sample_id'])*7919) if name=='mark' else rng
+                current = Image.alpha_composite(current, self._path_layer(args, dry=name == "dryBrushPath", rng=mark_rng))
             elif name == "dab":
                 self.state.persistent = Image.alpha_composite(self.state.persistent, self._dab(args, rng, pool=False))
             elif name == "poolPigment":

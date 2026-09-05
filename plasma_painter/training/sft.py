@@ -31,7 +31,7 @@ def build_sft_dataset(config: dict) -> list[dict]:
         frame = json.loads(Path(clip_item["path"]).read_text(encoding="utf-8"))["frames"][0]
         examples.append(
             {
-                "prompt": build_prompt(frame, media=True),
+                "prompt": build_prompt(frame, media=True, stroke_only=config['renderer'].get('profile')=='stroke_only'),
                 "completion": program.read_text(encoding="utf-8"),
                 "clip_id": clip_item["clip_id"],
                 "split": "art_train",

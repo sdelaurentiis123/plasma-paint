@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable
+import math
 
 
 Number = int | float
@@ -20,6 +21,7 @@ OPERATION_SPECS = {
     item.name: item
     for item in (
         OperationSpec("createPaper", 1, "Create deterministic paper with bounded grain."),
+        OperationSpec("mark", 1100, "One finite brush or pencil mark, anchored to a supplied field sample."),
         OperationSpec("setPalette", 2, "Select named pigment colors."),
         OperationSpec("washRegion", 96, "Lay a translucent data-linked region wash."),
         OperationSpec("strokePath", 320, "Paint a normalized contour path."),
@@ -95,7 +97,7 @@ def validate_operation(operation: dict[str, Any], *, max_path_points: int = 256)
                 raise ValueError("washRegion path point count is outside the configured bound")
             for index, point in enumerate(points):
                 _point(point, f"path[{index}]")
-    elif name in {"strokePath", "dryBrushPath"}:
+    elif name in {"strokePath", "dryBrushPath", "mark"}:
         if args.get("medium", "watercolor") not in STROKE_MEDIA:
             raise ValueError("unsupported stroke medium")
         _number(args.get("pressure", 0.7), 0.05, 1.0, "pressure")
@@ -107,6 +109,14 @@ def validate_operation(operation: dict[str, Any], *, max_path_points: int = 256)
             _point(point, f"points[{index}]")
         _number(args.get("width", 0.003), 0.0005, 0.08, "width")
         _number(args.get("opacity", 0.2), 0.0, 0.8, "opacity")
+        if name == "mark":
+            if len(points)>8: raise ValueError("finite mark allows at most eight points")
+            length=sum(math.dist(a,b) for a,b in zip(points,points[1:]))
+            _number(length, .002, .06, "mark arc length")
+            _number(args.get("width"), .0005, .018, "mark width")
+            _color(args.get("color"), "mark color")
+            if not isinstance(args.get("sample_id"), int) or isinstance(args.get("sample_id"),bool):
+                raise ValueError("mark requires integer sample_id")
     elif name in {"dab", "poolPigment"}:
         _point(args.get("center"), "center")
         _number(args.get("radius"), 0.001, 0.2, "radius")
@@ -135,6 +145,24 @@ def validate_operations(
         if counts[name] > OPERATION_SPECS[name].maximum_calls:
             raise ValueError(f"operation {name} exceeds its per-frame call cap")
     return operations
+
+
+def validate_stroke_only(operations, frame):
+    """Trusted host gate: generated code cannot opt out of this profile."""
+    samples={s['id']:s for s in frame['stroke_samples']}
+    if sum(op['op']=='createPaper' for op in operations)!=1:
+        raise ValueError('stroke-only requires exactly one paper operation')
+    for op in operations:
+        if op['op'] not in {'createPaper','mark'}:
+            raise ValueError('stroke-only forbids washes, contours, blooms and composites')
+        if op['op']=='createPaper':
+            if op['args'].get('grain',0)>.02: raise ValueError('stroke-only paper grain exceeds .02')
+            continue
+        a=op['args'];s=samples.get(a['sample_id'])
+        if s is None: raise ValueError('unknown field sample anchor')
+        if any(math.dist(p,[s['x'],s['z']])>.04 for p in a['points']):
+            raise ValueError('mark is disconnected from its field sample')
+    if not any(op['op']=='mark' for op in operations): raise ValueError('no finite marks')
 
 
 def api_documentation() -> str:

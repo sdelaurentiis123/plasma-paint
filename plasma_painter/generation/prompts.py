@@ -38,7 +38,17 @@ def representative_summary(frame: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def build_prompt(frame: dict[str, Any], *, optimized: bool = False, schema_v2: bool = False, media: bool = False) -> str:
+def build_prompt(frame: dict[str, Any], *, optimized: bool = False, schema_v2: bool = False, media: bool = False, stroke_only: bool = False) -> str:
+    if stroke_only:
+        reference=(Path(__file__).parents[1]/'renderer/reference_renderers/finite_marks.js').read_text()
+        return '''Write only export function createPainter(api, styleConfig), returning reset(seed) and renderFrame(frameFeatures,time,persistentState). No prose, fences, network, DOM, dynamic code, or direct Canvas access.
+Construct the painting from finite marks, not contours or a raster filter.
+Only api.reset(seed), api.createPaper({color:hex,grain:0..0.02}) and api.mark(args) are permitted. One paper and at most 1100 marks per frame.
+mark args: points (2..8 normalized [x,z] points), width (.0005..018), opacity (0..0.8), pressure (.05..1), texture (0..1), medium (bristle, graphite, charcoal, ink, pastel, watercolor), color (#rrggbb), sample_id (integer).
+Total polyline length must be .002..06. Every point must be within .04 of the referenced sample. Clamp both coordinates to [0,1].
+frameFeatures.stroke_samples contains {id,x,z,value,tx,tz}: signed density fluctuation encoded [0,1], zero at .5, using training normalization; a normalized-display tangent proxy, NOT flow. Sample IDs are stable across frames. Build tone through repeated marks and coherent layering. Paper grain must not substitute for structure. No washes, blooms, composites, or full-contour operations.
+The following is an untrained interface example. Redesign finite mark placement, pressure, grouping, colors and layering while retaining scalar/spatial correspondence. Return a complete reusable renderer, not one memorized image.
+''' + reference
     rules = """
 Return only JavaScript. Export exactly createPainter(api, styleConfig). The returned
 object must define reset(seed) and renderFrame(frameFeatures, time, persistentState).

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .compiler import ProgramValidation, validate_program
-from .dsl import validate_operations
+from .dsl import validate_operations, validate_stroke_only
 
 
 @dataclass
@@ -30,7 +30,9 @@ def run_program(
     max_runtime_ms: int = 1500,
     max_operations: int = 1200,
     max_path_points: int = 256,
+    profile: str = "legacy",
 ) -> SandboxResult:
+    if profile not in {'legacy','stroke_only'}: raise ValueError('unknown painter profile')
     validation = validate_program(code)
     if not validation.valid:
         return SandboxResult(False, [], asdict(validation), "; ".join(validation.errors), None)
@@ -61,13 +63,13 @@ def run_program(
     try:
         response = json.loads(result.stdout)
         operations = response["operationsByFrame"]
-        for frame_operations in operations:
+        for frame_index, frame_operations in enumerate(operations):
             validate_operations(
                 frame_operations,
                 max_operations=max_operations,
                 max_path_points=max_path_points,
             )
+            if profile=='stroke_only': validate_stroke_only(frame_operations, frames[frame_index])
     except (KeyError, ValueError, json.JSONDecodeError) as error:
         return SandboxResult(False, [], asdict(validation), f"invalid sandbox output: {error}", None)
     return SandboxResult(True, operations, asdict(validation), None, float(response["elapsedMs"]))
-
