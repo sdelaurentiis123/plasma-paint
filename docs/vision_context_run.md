@@ -1,5 +1,7 @@
 # Image-conditioned painter experiment
 
+Submitted **Rusty job 6988641**, source **c61cb98**, after successful CPU image preflight. The image processor produced 524 text/vision input IDs, pixel values shape [2000,1176], and image grid shape [1,3] for the staged public-domain test image. Monitoring is active for this job only. No GPU was allocated during model download or dependency troubleshooting.
+
 Model: Qwen/Qwen2.5-VL-7B-Instruct, public revision `cc594898137f460bfe9f0759e9844b3ce807cfb5`. Selected as a small image-capable baseline compatible with the existing Transformers 4.56.2 / Torch 2.8 environment. Its ability to produce useful painting code remains an experimental question. This is a new frozen base, not the previous text-only LoRA adapter.
 
 Dedicated Rusty checkout: `/mnt/home/sdelaurentiis/ceph/plasma-paint-runs/20260904-rusty/vision-context-v1`. Public model weights reside inside this checkout, not the previous run's model directory. The existing virtual environment is reused read-only. CPU processor preflight detected missing Torchvision; `torchvision==0.23.0+cu128` is installed with `--no-deps --target vision-deps` from the official PyTorch cu128 index and added to this job's PYTHONPATH. No shared environment or unrelated job is modified.
