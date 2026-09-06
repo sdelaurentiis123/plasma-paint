@@ -42,6 +42,7 @@ def run_program(
         "frames": frames,
         "style": style or {},
         "seed": int(seed),
+        "profile": profile,
         "maxOperations": int(max_operations),
         "maxPathPoints": int(max_path_points),
         "vmTimeoutMs": max(50, int(max_runtime_ms // max(len(frames), 1))),
@@ -63,6 +64,8 @@ def run_program(
     try:
         response = json.loads(result.stdout)
         operations = response["operationsByFrame"]
+        if not isinstance(operations, list) or len(operations) != len(frames):
+            raise ValueError("expected exactly one operation list per input frame")
         for frame_index, frame_operations in enumerate(operations):
             validate_operations(
                 frame_operations,
@@ -70,6 +73,7 @@ def run_program(
                 max_path_points=max_path_points,
             )
             if profile=='stroke_only': validate_stroke_only(frame_operations, frames[frame_index])
-    except (KeyError, ValueError, json.JSONDecodeError) as error:
+        elapsed_ms = float(response["elapsedMs"])
+    except (KeyError, ValueError, TypeError, IndexError) as error:
         return SandboxResult(False, [], asdict(validation), f"invalid sandbox output: {error}", None)
-    return SandboxResult(True, operations, asdict(validation), None, float(response["elapsedMs"]))
+    return SandboxResult(True, operations, asdict(validation), None, elapsed_ms)

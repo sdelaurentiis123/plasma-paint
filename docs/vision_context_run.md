@@ -1,6 +1,35 @@
 # Image-conditioned painter experiment
 
-Submitted **Rusty job 6988641**, source **c61cb98**, after successful CPU image preflight. The image processor produced 524 text/vision input IDs, pixel values shape [2000,1176], and image grid shape [1,3] for the staged public-domain test image. Monitoring is active for this job only. No GPU was allocated during model download or dependency troubleshooting.
+Original **Rusty job 6988641**, source **c61cb98**, finished in 11m10s with **0/6 valid renderers**, despite process exit 0. Its monitor was removed. The image processor preflight succeeded; this was primarily generated-code contract failure, not a missing vision input. No GPU was allocated during model download or dependency troubleshooting.
+
+## Failure diagnosis and bounded retry
+
+Van Gogh attempted local image loading and DOM/Canvas access, which are forbidden.
+Seurat used asynchronous rendering, batched mark arguments and object-shaped points.
+Manet drew paper during factory construction, discarded z, used malformed points,
+and treated the encoded fluctuation zero as 0 rather than .5. Van Gogh and Manet
+repairs repeated the preceding code exactly. One remote syntax-check timeout was
+also logged; replay does not establish its infrastructure cause, and raising that
+timeout would not fix the independently demonstrated invalid code.
+
+Fixes: enforce per-phase VM deadlines for factory/reset as well as frame rendering;
+reject asynchronous code and drawing outside renderFrame; report malformed mark
+arguments directly; verify output frame count. Add a tiny executable, artist-neutral
+API call example and explicitly explain that reference images are inference context,
+not JavaScript-accessible files. Repairs now use assistant/user turns and a different
+generation seed, and record duplicate outputs. No artist algorithm, palette, or
+scientific constraint is substituted or relaxed. Filter render errors are included
+in repair feedback. Raw failed programs remain unchanged.
+
+Validation: 43 tests passed, including new initialization timeout, lifecycle,
+async, malformed mark and neutral-example tests. The reference finite-mark renderer
+still executes on permitted old-85604 frames 0–7: 1,041 operations on each of eight
+frames. This validates interface compatibility, not model aesthetics or fidelity.
+
+Retry scope: a fresh `vision-context-v2` worktree, the same pinned frozen model and
+public reference images, three artists with two attempts each, one GPU with a
+one-hour hard cap (expected roughly 10–20 minutes based on the previous run).
+No optimizer updates, RL claims, new data access or external API spending.
 
 Model: Qwen/Qwen2.5-VL-7B-Instruct, public revision `cc594898137f460bfe9f0759e9844b3ce807cfb5`. Selected as a small image-capable baseline compatible with the existing Transformers 4.56.2 / Torch 2.8 environment. Its ability to produce useful painting code remains an experimental question. This is a new frozen base, not the previous text-only LoRA adapter.
 

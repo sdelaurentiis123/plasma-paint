@@ -10,6 +10,7 @@ from transformers import AutoProcessor,Qwen2_5_VLForConditionalGeneration
 from plasma_painter.config import load_config,artifact_root,stable_hash,write_json,sha256_file
 from plasma_painter.features.pipeline import decode_unit_raster
 from plasma_painter.generation.explore_tools import prompt_for
+from plasma_painter.generation.tool_contract import INTERFACE_GUIDANCE, repair_feedback
 from plasma_painter.generation.sample_programs import _strip_fence
 from plasma_painter.generation.filter_programs import filter_candidate
 from plasma_painter.renderer.render_program import render_program_clip
@@ -44,21 +45,25 @@ def main():
                 image=image.convert('RGB');image.thumbnail((560,560));images.append(image.copy())
         images.append(science)
         initial=prompt_for(f'Learn visual structure, mark-making and color relationships from the attached {artist} references. Paint the supplied plasma, not the objects in those paintings.')
-        initial+='\nImages in order: '+', '.join(r['title'] for r in refs)+', followed by the scientific density-fluctuation frame (grayscale: negative dark, zero middle gray, positive light). x radial increases right; z periodic increases down. Use the scientific image to understand structures, but write a renderer that consumes arbitrary frameFeatures rather than copying this image. No renderer example is supplied.'
+        initial+='\nImages in order: '+', '.join(r['title'] for r in refs)+', followed by the scientific density-fluctuation frame (grayscale: negative dark, zero middle gray, positive light). x radial increases right; z periodic increases down. Use the scientific image to understand structures, but write a renderer that consumes arbitrary frameFeatures rather than copying this image.'
         text=initial
+        previous_code=None
         for attempt in range(2):
-            content=[{'type':'image'} for _ in images]+[{'type':'text','text':text}]
-            chat=[{'role':'user','content':content}]
+            content=[{'type':'image'} for _ in images]+[{'type':'text','text':initial}]
+            chat=[{'role':'system','content':INTERFACE_GUIDANCE},{'role':'user','content':content}]
+            if previous_code is not None:
+                chat += [{'role':'assistant','content':previous_code},{'role':'user','content':text}]
             formatted=processor.apply_chat_template(chat,tokenize=False,add_generation_prompt=True)
             inputs=processor(text=[formatted],images=images,padding=True,return_tensors='pt').to(model.device)
-            torch.manual_seed(1701);torch.cuda.manual_seed_all(1701)
+            generation_seed=1701+attempt
+            torch.manual_seed(generation_seed);torch.cuda.manual_seed_all(generation_seed)
             with torch.inference_mode(): tokens=model.generate(**inputs,max_new_tokens=2800,do_sample=True,temperature=.7,top_p=.9)
             raw=processor.batch_decode(tokens[:,inputs.input_ids.shape[1]:],skip_special_tokens=True)[0]
             code=_strip_fence(raw).rstrip()+'\n';digest=stable_hash(code);(out/(digest+'.js')).write_text(code)
             style={'name':artist,'grain':0,'paper':'#f7f0df'}
             validity=filter_candidate(code,clip['frames'],config,style)
-            item={'artist':artist,'attempt':attempt,'seed':1701,'raw_text':raw,'program_hash':digest,'program_path':str(out/(digest+'.js')),
-                  'prompt':text,'image_count':len(images),'reference_ids':[r['id'] for r in refs],'validation':validity,'origin':'frozen_vision_model_no_template'}
+            item={'artist':artist,'attempt':attempt,'seed':1701,'generation_seed':generation_seed,'raw_text':raw,'program_hash':digest,'program_path':str(out/(digest+'.js')),
+                  'prompt':text,'messages':chat,'duplicate_previous':code==previous_code,'image_count':len(images),'reference_ids':[r['id'] for r in refs],'validation':validity,'origin':'frozen_vision_model_neutral_api_example'}
             if validity['accepted']:
                 try:item['render']=render_program_clip(code,clip,config,style,seed=1701,checkpoint=model_info['repo'],origin=item['origin'])
                 except (ValueError,RuntimeError,TypeError,KeyError) as error:item['render_error']=str(error)
@@ -70,8 +75,9 @@ def main():
                     with Image.open(item['render']['still']) as image:
                         image=image.convert('RGB');image.thumbnail((560,560));images.append(image.copy())
                     feedback='The LAST image is your own rendered draft. Compare it against the artist references and scientific structure. Improve the mark organization, coherence, color and style while preserving the plasma. Return a revised complete program.'
-                else:feedback='Your draft failed validation/rendering: '+str(validity.get('error') or item.get('render_error') or 'blank output')+'. Repair the complete program.'
-                text=initial+'\nPrevious program:\n'+code+'\n'+feedback
+                else:feedback=repair_feedback(validity.get('error') or validity.get('render_error') or item.get('render_error') or 'blank output')
+                previous_code=code
+                text=feedback
     write_json(out/'manifest.json',{'status':'completed','model':model_info,'records':results,'input_provenance':input_provenance,
                                   'wall_seconds':time.perf_counter()-started,'no_training':True,'no_calibrated_aesthetic_judge':True})
 

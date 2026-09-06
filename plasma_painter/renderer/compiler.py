@@ -12,6 +12,7 @@ from .dsl import ALLOWED_OPERATIONS
 
 
 FORBIDDEN_PATTERNS = {
+    "asynchronous_code": r"\b(async|await|Promise)\b",
     "network": r"\b(fetch|XMLHttpRequest|WebSocket|EventSource|navigator)\b",
     "dom": r"\b(document|window|localStorage|sessionStorage|indexedDB)\b",
     "dynamic_code": r"\b(eval|Function|AsyncFunction|importScripts)\b|\bimport\s*\(",
