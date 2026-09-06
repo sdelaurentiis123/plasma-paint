@@ -58,3 +58,17 @@ experiments follow working, scientifically evaluated free-paint programs.
 
 The preceding anchored JSON-tool job 6989277 was cancelled at 5m18s after the user's
 clarification. Its files were retained and no other user's job was changed.
+
+## Run record
+
+- Code commit: `ea5bacb` (pushed to the authorized plasma-paint repository).
+- Rusty job: `6989353`, confirmed RUNNING on `workergpu177`.
+- Isolated worktree: `/mnt/home/sdelaurentiis/ceph/plasma-paint-runs/20260904-rusty/free-paint-v1`.
+- Launch: `sbatch scripts/rusty_free_painter.slurm` from that worktree.
+- Maximum allocation: one RTX Pro 6000 Blackwell, one hour; six completions maximum.
+- Local verification: `python3 -m pytest -q` — 62 passed; `git diff --check` clean.
+- Outputs: `artifacts/plasma_painter/free-paint/manifest.json`, content-addressed
+  programs and per-section PNG/GIF/operation traces once generated.
+- This is frozen-model generation, not an adapter update, DPO, or GRPO. No success
+  rate or style-quality result is available at submission. Scientific coarse floors
+  and temporal probes are partial diagnostics, not the full pilot gate.
