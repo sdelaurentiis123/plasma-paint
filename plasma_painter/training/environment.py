@@ -32,6 +32,8 @@ def evaluate_program(
     scale: float = 0.25,
     capture_path: str | Path | None = None,
 ) -> dict[str, Any]:
+    if config['renderer'].get('profile') == 'stroke_only':
+        raise ValueError('Legacy RL fidelity metrics do not support finite marks. Use evaluation.finite_probe for diagnostics; calibrate a finite-mark fidelity gate before RL.')
     reward_config = yaml.safe_load(Path("configs/plasma_painter/rewards.yaml").read_text(encoding="utf-8"))
     style = yaml.safe_load(Path(config["renderer"]["style_config"]).read_text(encoding="utf-8"))
     validation = validate_program(code)
