@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from .compiler import ProgramValidation, validate_program
-from .dsl import validate_operations, validate_stroke_only
+from .dsl import validate_operations, validate_stroke_only,validate_free_paint
 
 
 @dataclass
@@ -19,6 +19,7 @@ class SandboxResult:
     validation: dict[str, Any]
     error: str | None
     elapsed_ms: float | None
+    query_counts_by_frame: list[dict[str,int]] | None = None
 
 
 def run_program(
@@ -32,7 +33,7 @@ def run_program(
     max_path_points: int = 256,
     profile: str = "legacy",
 ) -> SandboxResult:
-    if profile not in {'legacy','stroke_only'}: raise ValueError('unknown painter profile')
+    if profile not in {'legacy','stroke_only','free_paint'}: raise ValueError('unknown painter profile')
     validation = validate_program(code)
     if not validation.valid:
         return SandboxResult(False, [], asdict(validation), "; ".join(validation.errors), None)
@@ -47,6 +48,9 @@ def run_program(
         "maxPathPoints": int(max_path_points),
         "vmTimeoutMs": max(50, int(max_runtime_ms // max(len(frames), 1))),
     }
+    if profile=='free_paint':
+        from plasma_painter.features.free_fields import query_fields
+        request['queryFields']=[query_fields(frame) for frame in frames]
     try:
         result = subprocess.run(
             ["node", "--max-old-space-size=96", str(runner)],
@@ -73,7 +77,8 @@ def run_program(
                 max_path_points=max_path_points,
             )
             if profile=='stroke_only': validate_stroke_only(frame_operations, frames[frame_index])
+            if profile=='free_paint': validate_free_paint(frame_operations)
         elapsed_ms = float(response["elapsedMs"])
     except (KeyError, ValueError, TypeError, IndexError) as error:
         return SandboxResult(False, [], asdict(validation), f"invalid sandbox output: {error}", None)
-    return SandboxResult(True, operations, asdict(validation), None, elapsed_ms)
+    return SandboxResult(True, operations, asdict(validation), None, elapsed_ms,response.get('queryCountsByFrame'))

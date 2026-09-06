@@ -24,26 +24,27 @@ def change(images):
     return float(np.mean([np.mean(np.abs(a-b)) for a,b in zip(arrays,arrays[1:])]))
 
 
-def probe(code,clip,seed=1701):
+def probe(code,clip,seed=1701,profile='stroke_only'):
     if clip['split']!='art_train' or not all(str(f['source']['shot'])=='85604' and
                 0<=f['source']['frame_index']<288 for f in clip['frames']):
         raise ValueError('This diagnostic permits only old-85604 art_train frames within [0,288)')
-    frames=[with_stroke_samples(f) for f in clip['frames']]
+    if profile not in {'stroke_only','free_paint'}:raise ValueError('Unsupported probe profile')
+    frames=[with_stroke_samples(f) for f in clip['frames']] if profile=='stroke_only' else clip['frames']
     if len(frames)<2: raise ValueError('A temporal probe needs at least two frames')
     report={'program_hash':stable_hash(code),'clip_id':clip['clip_id'],'seed':seed,
             'frame_indices':[f['source']['frame_index'] for f in frames],
             'scope':'exploratory diagnostics; not a scientific-fidelity pass or aesthetic score'}
-    result=run_program(code,frames,seed=seed,profile='stroke_only')
+    result=run_program(code,frames,seed=seed,profile=profile)
     report.update(valid=result.valid,error=result.error)
     if not result.valid:return report
-    repeat=run_program(code,frames,seed=seed,profile='stroke_only')
+    repeat=run_program(code,frames,seed=seed,profile=profile)
     report['operations_reproducible']=repeat.valid and repeat.operations_by_frame==result.operations_by_frame
     style={'name':'finite-probe','grain':0,'paper':'#f7f0df'}
     images=CanvasRuntime(384,256,style,seed).render_clip(frames,result.operations_by_frame)
     repeated_images=CanvasRuntime(384,256,style,seed).render_clip(frames,result.operations_by_frame)
     report['pixels_reproducible']=all(a.tobytes()==b.tobytes() for a,b in zip(images,repeated_images))
-    frozen=[frames[0]]*len(frames)
-    frozen_result=run_program(code,frozen,seed=seed,profile='stroke_only')
+    frozen=[{**frames[0],'source':f['source'],'time':f.get('time')} for f in frames]
+    frozen_result=run_program(code,frozen,seed=seed,profile=profile)
     report['frozen_input_valid']=frozen_result.valid
     if frozen_result.valid:
         frozen_images=CanvasRuntime(384,256,style,seed).render_clip(frozen,frozen_result.operations_by_frame)
@@ -68,14 +69,16 @@ def main():
     parser.add_argument('--program',required=True)
     parser.add_argument('--clip',required=True)
     parser.add_argument('--output',required=True)
+    parser.add_argument('--profile',choices=['stroke_only','free_paint'],default='stroke_only')
     args=parser.parse_args()
     clip_path=Path(args.clip)
     # This command accepts an already-selected compact training clip, never raw shot files.
-    if not clip_path.name.startswith('tcv-85604-art_train-') or clip_path.suffix!='.json':
+    permitted_section=clip_path.name in {f'section-y{y}.generated.json' for y in (0,1,16,17,18,19,30,31)}
+    if not permitted_section and (not clip_path.name.startswith('tcv-85604-art_train-') or clip_path.suffix!='.json'):
         raise ValueError('Select a compact permitted training-clip JSON')
     clip=json.loads(clip_path.read_text())
     code=Path(args.program).read_text()
-    records=[probe(code,clip,seed) for seed in (1701,1702,1703)]
+    records=[probe(code,clip,seed,args.profile) for seed in (1701,1702,1703)]
     write_json(args.output,{'records':records},overwrite=False)
     print(json.dumps(records,indent=2))
 

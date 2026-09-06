@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 from plasma_painter.features.pipeline import decode_unit_raster
 
-RUNTIME_VERSION = "canvas-runtime-0.3.0-finite-marks"
+RUNTIME_VERSION = "canvas-runtime-0.4.0-free-strokes"
 
 
 def _rgb(value: str, fallback: str = "#30343b") -> tuple[int, int, int]:
@@ -164,7 +164,8 @@ class CanvasRuntime:
                 grain_amount = float(operation["args"].get("grain", grain_amount))
                 break
         paper = np.full((self.height, self.width, 3), _rgb(paper_color, "#f2ede2"), dtype=np.float32)
-        paper += rng.normal(0.0, 255.0 * grain_amount, (self.height, self.width, 1))
+        paper_rng=np.random.default_rng(self.seed) if any(op['op']=='paintStroke' for op in operations) else rng
+        paper += paper_rng.normal(0.0, 255.0 * grain_amount, (self.height, self.width, 1))
         image = Image.fromarray(np.uint8(np.clip(paper, 0, 255)), mode="RGB").convert("RGBA")
         if self.state.persistent is None:
             self.state.persistent = Image.new("RGBA", image.size, (0, 0, 0, 0))
@@ -173,8 +174,9 @@ class CanvasRuntime:
             name, args = operation["op"], operation.get("args", {})
             if name == "washRegion" and "raster" in args:
                 current = Image.alpha_composite(current, self._wash(frame, args))
-            elif name in {"strokePath", "dryBrushPath", "mark"}:
+            elif name in {"strokePath", "dryBrushPath", "mark", "paintStroke"}:
                 mark_rng = np.random.default_rng(self.seed + int(args['sample_id'])*7919) if name=='mark' else rng
+                if name=='paintStroke':mark_rng=np.random.default_rng(self.seed+int(args.get('stroke_id',0))*7919)
                 current = Image.alpha_composite(current, self._path_layer(args, dry=name == "dryBrushPath", rng=mark_rng))
             elif name == "dab":
                 self.state.persistent = Image.alpha_composite(self.state.persistent, self._dab(args, rng, pool=False))

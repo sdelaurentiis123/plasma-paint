@@ -22,6 +22,7 @@ OPERATION_SPECS = {
     for item in (
         OperationSpec("createPaper", 1, "Create deterministic paper with bounded grain."),
         OperationSpec("mark", 1100, "One finite brush or pencil mark, anchored to a supplied field sample."),
+        OperationSpec("paintStroke", 1100, "A freely positioned finite stroke anywhere in the normalized cross-section; no sample anchor."),
         OperationSpec("setPalette", 2, "Select named pigment colors."),
         OperationSpec("washRegion", 96, "Lay a translucent data-linked region wash."),
         OperationSpec("strokePath", 320, "Paint a normalized contour path."),
@@ -97,7 +98,7 @@ def validate_operation(operation: dict[str, Any], *, max_path_points: int = 256)
                 raise ValueError("washRegion path point count is outside the configured bound")
             for index, point in enumerate(points):
                 _point(point, f"path[{index}]")
-    elif name in {"strokePath", "dryBrushPath", "mark"}:
+    elif name in {"strokePath", "dryBrushPath", "mark", "paintStroke"}:
         if args.get("medium", "watercolor") not in STROKE_MEDIA:
             raise ValueError("unsupported stroke medium")
         _number(args.get("pressure", 0.7), 0.05, 1.0, "pressure")
@@ -117,6 +118,13 @@ def validate_operation(operation: dict[str, Any], *, max_path_points: int = 256)
             _color(args.get("color"), "mark color")
             if not isinstance(args.get("sample_id"), int) or isinstance(args.get("sample_id"),bool):
                 raise ValueError("mark requires integer sample_id")
+        if name == 'paintStroke':
+            if 'medium' not in args:raise ValueError('paintStroke requires an explicit medium choice')
+            if len(points)>64:raise ValueError('paintStroke allows at most 64 points')
+            _number(sum(math.dist(a,b) for a,b in zip(points,points[1:])),.0005,2,'paintStroke arc length')
+            _color(args.get('color'),'paintStroke color')
+            if 'stroke_id' in args and (type(args['stroke_id'])!=int or not 0<=args['stroke_id']<10000000):
+                raise ValueError('stroke_id must be integer 0..9999999')
     elif name in {"dab", "poolPigment"}:
         _point(args.get("center"), "center")
         _number(args.get("radius"), 0.001, 0.2, "radius")
@@ -171,3 +179,13 @@ def api_documentation() -> str:
         lines.append(f"- {spec.name}: {spec.description} Maximum calls/frame: {spec.maximum_calls}.")
     lines.append("strokePath/dryBrushPath optional controls: medium in " + ", ".join(STROKE_MEDIA) + "; pressure 0.05..1; texture 0..1. These change mark construction, not field geometry. Default preserves legacy watercolor. Select tools intentionally; do not merely swap colors.")
     return "\n".join(lines)
+
+
+def validate_free_paint(operations):
+    if sum(op['op']=='createPaper' for op in operations)!=1:
+        raise ValueError('free painting requires exactly one paper per frame')
+    if any(op['op'] not in {'createPaper','paintStroke'} for op in operations):
+        raise ValueError('free painting uses paper and finite paintStroke tools only')
+    if any(op['op']=='createPaper' and op['args'].get('grain',0)>.02 for op in operations):
+        raise ValueError('free painting paper grain exceeds .02')
+    if not any(op['op']=='paintStroke' for op in operations):raise ValueError('no paint strokes')

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 import time
+from collections import Counter
 
 import imageio.v2 as imageio
 import numpy as np
@@ -66,7 +67,7 @@ def render_program_clip(
         "program_hash": program_hash,
         "program_path": "",
         "clip_id": clip["clip_id"],
-        "field_id": "Ne_y18",
+        "field_id": f"Ne_y{clip['frames'][0]['geometry'].get('plane_y',18)}",
         "shot": clip["frames"][0]["source"]["shot"],
         "frame_indices": [frame["source"]["frame_index"] for frame in clip["frames"]],
         "split": clip["split"],
@@ -79,6 +80,8 @@ def render_program_clip(
         "renderer_runtime_version": RUNTIME_VERSION,
         "sandbox_elapsed_ms": sandbox.elapsed_ms,
         "operation_count": sum(map(len, sandbox.operations_by_frame)),
+        "tool_counts": dict(Counter(op['args'].get('medium','watercolor') for ops in sandbox.operations_by_frame for op in ops if op['op'] in {'paintStroke','mark','strokePath','dryBrushPath'})),
+        "field_query_counts_by_frame": sandbox.query_counts_by_frame,
         "still": paths[0],
         "frames": paths,
         "clip": str(gif.resolve()),

@@ -47,7 +47,7 @@ def validate_program(code: str, *, max_bytes: int = 24_000, node_check: bool = T
         if re.search(pattern, code):
             errors.append(f"forbidden JavaScript capability: {label}")
     api_calls = sorted(set(re.findall(r"\bapi\.([A-Za-z_$][\w$]*)\s*\(", code)))
-    unknown = sorted(set(api_calls) - set(ALLOWED_OPERATIONS) - {"reset"})
+    unknown = sorted(set(api_calls) - set(ALLOWED_OPERATIONS) - {"reset","sample","gradient"})
     if unknown:
         errors.append(f"unknown painter API calls: {', '.join(unknown)}")
     if not set(api_calls).intersection(ALLOWED_OPERATIONS):
