@@ -23,15 +23,18 @@ def demonstration(env):
     env.step({'action':'finish'})
 
 
-def vision_rollout(env, model_path, references):
+def vision_rollout(env, model_path, references, *, loaded=None, on_step=None):
     import torch
     from PIL import Image
     from transformers import AutoProcessor,Qwen2_5_VLForConditionalGeneration
-    processor=AutoProcessor.from_pretrained(model_path,local_files_only=True,use_fast=False,
-        min_pixels=256*28*28,max_pixels=512*28*28)
-    model=Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,local_files_only=True,
-        torch_dtype=torch.bfloat16,device_map='auto',attn_implementation='sdpa')
+    if loaded is None:
+        processor=AutoProcessor.from_pretrained(model_path,local_files_only=True,use_fast=False,
+            min_pixels=256*28*28,max_pixels=512*28*28)
+        model=Qwen2_5_VLForConditionalGeneration.from_pretrained(model_path,local_files_only=True,
+            torch_dtype=torch.bfloat16,device_map='auto',attn_implementation='sdpa')
+    else:model,processor=loaded
     model.eval();torch.manual_seed(env.seed)
+    if torch.cuda.is_available():torch.cuda.manual_seed_all(env.seed)
     refs=[]
     for path in references:
         with Image.open(path) as im:refs.append(im.convert('RGB'))
@@ -58,6 +61,7 @@ def vision_rollout(env, model_path, references):
         except ValueError:action={'action':'invalid_json'}
         _,_,_,_,previous=env.step(action)
         env.events[-1]['model_raw_response']=raw
+        if on_step:on_step(env)
         print(env.turn,previous,flush=True)
 
 
