@@ -27,7 +27,8 @@ CASES = (
 
 def make_prompt(frame, reference, *, example=False):
     samples = with_stroke_samples(frame)['stroke_samples']
-    brief = '''Write only a complete reusable JavaScript createPainter(api, styleConfig).
+    brief = '''Begin literally: export function createPainter(api, styleConfig) {
+Write a complete reusable JavaScript program, with reset(seed) { api.reset(seed); }.
 Aim for expressive directional finite brushstrokes and purposeful color relationships,
 inspired by Van Gogh. Depict the plasma, not objects from reference paintings.
 There is no artist-specific API. Choose your own marks, media, palette and layering.
@@ -42,10 +43,13 @@ retain meaningful position and signed intensity from its referenced sample.
 The array below shows actual input shape, NOT the complete frame. Render the full
 array supplied on every call. tx,tz are visualization tangents, NOT physical flow.
 '''
-    brief += '\nRepresentative training input: ' + json.dumps({
-        'sample_count': len(samples), 'stroke_samples': samples[:3],
-        'value_range': [0, 1], 'neutral_value': .5,
+    brief += '\nRuntime field subset (array truncated for illustration): ' + json.dumps({
+        'stroke_samples': samples[:3],
     }, sort_keys=True)
+    brief += (f'\nExplanatory metadata, NOT frameFeatures properties: sample_count={len(samples)}, '
+              'value_range=[0,1], neutral_value=0.5. Read the count from '
+              'frameFeatures.stroke_samples.length. Never access frameFeatures.value_range, '
+              'frameFeatures.neutral_value or frameFeatures.sample_count.')
     if example:
         brief += ('\nWORKING INTERFACE CONTROL, hand-authored, not artist training data. '
                   'Redesign its mark-making while preserving the exact interface and bounds.\n' + reference)

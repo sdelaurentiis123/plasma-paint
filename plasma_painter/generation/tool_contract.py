@@ -1,6 +1,9 @@
 """Artist-neutral interface examples, not a painting/composition template."""
 
 INTERFACE_GUIDANCE = '''
+Begin literally: export function createPainter(api, styleConfig) {
+Return {reset(seed) { api.reset(seed); }, renderFrame(frameFeatures,time,persistentState) { /* drawing here */ }}.
+Do not seed Math.random yourself; api.reset(seed) seeds the runtime's Math.random.
 Execution contract (mandatory): createPainter only constructs and returns the painter.
 reset(seed) only resets state/randomness. All drawing calls, including createPaper,
 belong INSIDE synchronous renderFrame. No async functions or promises.
@@ -20,6 +23,8 @@ points contains [x,z] PAIRS, never {x,z} objects or [x,z,r,g,b].
 Use both s.x and s.z, and retain s.id; never make up sample IDs.
 The encoded fluctuation s.value is in [0,1]: signed fluctuation is 2*s.value-1,
 neutral is .5. Do not test s.value<0 to detect negative fluctuation.
+Short strokes still need length >= .002 even at zero fluctuation. Use a positive
+minimum length; opacity or mark selection can encode near-zero amplitude instead.
 Choose your own palette, media, paths, layers, selection and density of marks.
 Keep every point in [0,1] and within .04 of its original sample anchor.
 Check all calls against the contract before returning complete JavaScript.

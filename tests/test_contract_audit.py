@@ -1,5 +1,7 @@
 from pathlib import Path
+import json
 from plasma_painter.generation.contract_audit import CASES, make_prompt, validate_candidate
+from plasma_painter.features.stroke_samples import with_stroke_samples
 
 
 def test_ablation_changes_one_factor_at_a_time(synthetic_clip):
@@ -24,3 +26,16 @@ def test_infrastructure_timeout_retries_same_code(monkeypatch):
     result=validate_candidate('same code',[],{}, {})
     assert calls == ['same code','same code']
     assert result['accepted'] and result['infrastructure_retry']['same_program']
+
+
+def test_prompt_advertises_only_real_input_fields(synthetic_clip):
+    frame=synthetic_clip['frames'][0]
+    prompt=make_prompt(frame,'')
+    payload=prompt.split('Runtime field subset (array truncated for illustration): ')[1].split('\n')[0]
+    example=json.loads(payload)
+    actual=with_stroke_samples(frame)
+    assert set(example)<=set(actual)
+    assert example['stroke_samples']==actual['stroke_samples'][:3]
+    assert 'Begin literally: export function createPainter(api, styleConfig)' in prompt
+    assert 'reset(seed) { api.reset(seed); }' in prompt
+    assert 'NOT frameFeatures properties' in prompt
