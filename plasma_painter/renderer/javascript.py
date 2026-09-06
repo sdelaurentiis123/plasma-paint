@@ -9,9 +9,9 @@ def parse_source(code, mode='code'):
         raise ValueError('program exceeds 24000 bytes')
     try:
         result = subprocess.run(['node', str(Path(__file__).with_name('parse_program.mjs')), mode],
-                                input=code, text=True, capture_output=True, timeout=3)
+                                input=code, text=True, capture_output=True, timeout=30)
     except subprocess.TimeoutExpired as error:
-        raise ValueError('JavaScript parser timed out after 3 seconds') from error
+        raise ValueError('JavaScript parser startup/parse timed out after 30 seconds; candidate was not executed') from error
     if result.returncode:
         raise ValueError('JavaScript parse failed: '+result.stderr[-1500:])
     return json.loads(result.stdout)

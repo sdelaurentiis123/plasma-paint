@@ -16,6 +16,7 @@ export PLASMA_PAINTER_MODEL_PATH="$PWD/models/Qwen2.5-VL-7B-Instruct"
 export HF_HOME="$PWD/.hf-cache"
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 TOKENIZERS_PARALLELISM=false PYTHONHASHSEED=1701
 git rev-parse HEAD
+PYTHONPATH=. python scripts/free_paint_preflight.py
 python -m pip freeze > artifacts/plasma_painter/dependencies-free-paint.txt
 python -m pip freeze --path vision-deps >> artifacts/plasma_painter/dependencies-free-paint.txt
 srun python -m plasma_painter.generation.free_painter
