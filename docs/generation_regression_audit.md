@@ -87,3 +87,11 @@ art is inspected and reward/fidelity audits pass.
 Recommendation: **REVISE** the experimental procedure. Preserve the successful
 baseline as a control; test one change at a time; do not blame the model based on
 the confounded batches or describe finite-style demos as trained outputs.
+
+## Local verification before the diagnostic run
+
+45 tests passed. Replayed all 17 previously accepted media-v3 programs on the same
+two permitted training frames with today's legacy runtime: **17/17 still accepted**.
+The finite-mark control also passes nonblank pixel rendering on all eight permitted
+frames, with 1,041 operations per frame. These checks rule out a blanket regression
+in the old valid-render path; they do not establish visual quality of new code.
