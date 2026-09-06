@@ -1,0 +1,5 @@
+{
+  "name": "plasma-painter-validation",
+  "private": true,
+  "dependencies": {"acorn": "8.15.0"}
+}

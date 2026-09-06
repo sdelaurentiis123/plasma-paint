@@ -63,6 +63,12 @@ for (const name of allowed) {
       }
       if (!Number.isInteger(args.sample_id)) throw new Error("mark.sample_id: use the original stroke sample's integer id");
     }
+    if (name==='paintStroke') {
+      if (!Array.isArray(args.points) || args.points.length<2 || args.points.length>64 ||
+          !args.points.every(p=>Array.isArray(p) && p.length===2 && p.every(v=>Number.isFinite(v) && v>=0 && v<=1)))
+        throw new Error('paintStroke.points requires 2..64 finite [x,y] pairs in [0,1]; a one-point dab is not a stroke');
+      if (!/^#[0-9a-fA-F]{6}$/.test(args.color)) throw new Error('paintStroke.color requires #rrggbb, not HSL or RGB strings');
+    }
     if (current.length >= request.maxOperations) throw new Error("operation cap exceeded");
     const copy = structuredClone(args);
     if (Array.isArray(copy.points) && copy.points.length > request.maxPathPoints) {

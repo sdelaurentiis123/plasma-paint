@@ -20,3 +20,4 @@ plasma_painter/web/demo/static/*.generated.*
 
 # Local rating data is append-only and may contain rater identifiers.
 ratings.jsonl
+node_modules/

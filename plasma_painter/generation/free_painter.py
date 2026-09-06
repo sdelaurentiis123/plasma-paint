@@ -4,7 +4,7 @@ import os
 import time
 from pathlib import Path
 from plasma_painter.config import load_config,artifact_root,stable_hash,sha256_file,write_json
-from plasma_painter.generation.free_paint_prompt import CONTRACT,wrap_body
+from plasma_painter.generation.free_paint_prompt import CONTRACT,wrap_body,prepare_response
 from plasma_painter.generation.sample_programs import _strip_fence
 from plasma_painter.generation.contract_audit import validate_candidate
 from plasma_painter.renderer.render_program import render_program_clip
@@ -63,7 +63,10 @@ def main():
                 'Do not branch on section IDs or hard-code a particular training frame. '
                 'Preserve strong structures and signed intensity. Build a coherent, richly painted image, '
                 'not sparse grid stamps or data-independent random decoration. '
-                'Choose your own palette, layering and spatial organization. Return only the function body.')
+                'Choose your own palette, layering and spatial organization. Return one complete '
+                'function renderFrame(frameFeatures,time,persistentState). Check that all coordinates '
+                'are declared before sampling, gradient returns .dx and .dz (not an array), colors '
+                'are six-digit hex, every path has at least two points, and field names are exact.')
         messages=[{'role':'system','content':CONTRACT},
                   {'role':'user','content':[{'type':'image'} for _ in images]+[{'type':'text','text':prompt}]}]
         for attempt in range(3):
@@ -75,15 +78,25 @@ def main():
             with torch.inference_mode():tokens=model.generate(**inputs,max_new_tokens=2800,do_sample=True,temperature=.65,top_p=.9)
             generated=tokens[:,inputs.input_ids.shape[1]:]
             raw=processor.batch_decode(generated,skip_special_tokens=True)[0]
-            body=_strip_fence(raw);code=wrap_body(body);digest=stable_hash(code)
+            preparation_error=None
+            try:code,response_format=prepare_response(raw)
+            except ValueError as error:
+                preparation_error=str(error);code=wrap_body(_strip_fence(raw));response_format='invalid'
+            digest=stable_hash(code)
             (out/(digest+'.js')).write_text(code)
             item={'artist':artist,'attempt':attempt,'generation_seed':seed,'render_seed':1701,'raw_text':raw,
                   'messages':list(messages),'reference_ids':[r['id'] for r in selected],
                   'program_hash':digest,'program_path':str(out/(digest+'.js')),
+                  'response_format':response_format,
+                  'duplicate_of_attempt':next((r['attempt'] for r in records if r['artist']==artist and r['program_hash']==digest),None),
                   'input_shapes':{k:list(v.shape) for k,v in inputs.items()},'image_grid_thw':inputs['image_grid_thw'].tolist(),
                   'generated_token_count':generated.shape[1],'hit_token_cap':generated.shape[1]>=2800,
                   'origin':'frozen_vision_free_xy_body_trusted_lifecycle_no_painting_example','sections':[]}
             try:
+                if preparation_error:raise ValueError(preparation_error)
+                if item['duplicate_of_attempt'] is not None:
+                    previous=next(r for r in records if r['artist']==artist and r['program_hash']==digest)
+                    raise ValueError('Unchanged rejected program; repair the actual error: '+previous.get('error','invalid output'))
                 for clip,section in zip(clips,index['records']):
                     style={'name':artist,'grain':0,'paper':'#f7f0df'}
                     valid=validate_candidate(code,clip['frames'],config,style)
@@ -107,7 +120,7 @@ def main():
             records.append(item);write_json(out/'manifest.json',manifest)
             print(f'{artist} attempt {attempt}: rendered_sections={sum("render" in s for s in item["sections"])} partial_science={item.get("partial_science_pass",False)} error={item.get("error")}',flush=True)
             if item.get('partial_science_pass'):break
-            feedback='Correct the reusable function body. Evidence: '+item.get('error','incomplete render')+'. Keep the intended artist style and free stroke placement; preserve the plasma. Return only the body.'
+            feedback='Correct the reusable renderFrame function. Evidence: '+item.get('error','incomplete render')+'. Keep the intended artist style and free stroke placement; preserve the plasma. Return the complete corrected function, not the identical rejected program.'
             if 'render' in item:
                 with Image.open(item['render']['still']) as image:
                     image=image.convert('RGB');image.thumbnail((560,560));images.append(image.copy())

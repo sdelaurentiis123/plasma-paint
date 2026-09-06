@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .dsl import ALLOWED_OPERATIONS
+from .javascript import parse_source
 
 
 FORBIDDEN_PATTERNS = {
@@ -37,6 +38,10 @@ def validate_program(code: str, *, max_bytes: int = 24_000, node_check: bool = T
     encoded = code.encode("utf-8")
     if len(encoded) > max_bytes:
         errors.append(f"program exceeds {max_bytes} bytes")
+    try:
+        code = parse_source(code)['clean']
+    except ValueError as error:
+        return ProgramValidation(False, [str(error)], [], len(encoded))
     if not re.search(r"export\s+function\s+createPainter\s*\(\s*api\s*,\s*styleConfig\s*\)", code):
         errors.append("missing exact exported createPainter(api, styleConfig) function")
     if not re.search(r"\breset\s*(?::\s*function\s*)?\(\s*seed\s*\)", code):

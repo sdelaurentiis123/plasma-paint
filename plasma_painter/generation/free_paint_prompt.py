@@ -1,6 +1,6 @@
 """Free placement, generic tools, and no supplied painting algorithm."""
 
-CONTRACT = '''Write only JavaScript for the BODY of renderFrame(frameFeatures,time,persistentState).
+CONTRACT = '''Write one JavaScript function renderFrame(frameFeatures,time,persistentState).
 Do not write export, createPainter or reset: the trusted wrapper supplies those.
 Do not return an image description. Write a reusable painting algorithm.
 
@@ -47,9 +47,16 @@ not a substitute for plasma structures. Every major structure must correspond to
 the field: use scalar queries to place, shape and weight marks, not just palette.
 No imports, network, DOM, canvas access, timers, while/do loops, async, classes,
 eval, Function, host globals, prototype access or dynamic property-name access.
-Return only the function body. Preserve sign, relative intensity and geometry in
+Return the complete renderFrame function. Preserve sign, relative intensity and geometry in
 the finished image; fidelity will be measured from the painting, not grid anchors.
 '''
+
+
+def prepare_response(raw):
+    from plasma_painter.generation.sample_programs import _strip_fence
+    from plasma_painter.renderer.javascript import parse_source
+    parsed = parse_source(_strip_fence(raw), 'body')
+    return wrap_body(parsed['normalized']), parsed['format']
 
 
 def wrap_body(body):

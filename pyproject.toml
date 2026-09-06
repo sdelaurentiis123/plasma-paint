@@ -33,7 +33,7 @@ dev = ["pytest>=7.4"]
 include = ["plasma_painter*"]
 
 [tool.setuptools.package-data]
-"plasma_painter.renderer" = ["sandbox_runner.mjs", "reference_renderers/*.js"]
+"plasma_painter.renderer" = ["*.mjs", "reference_renderers/*.js"]
 "plasma_painter.web.demo" = ["static/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
