@@ -11,6 +11,8 @@ from plasma_painter.training.painting_gym import PaintingGym
 
 class PlasmaPaintGymData(vf.TaskData):
     frame: dict
+    style_pool: str | None = None
+    style: str | None = None
 
 
 class PlasmaPaintGymTask(vf.Task[PlasmaPaintGymData]):
@@ -21,6 +23,8 @@ class PlasmaPaintGymTask(vf.Task[PlasmaPaintGymData]):
 class PlasmaPaintGymConfig(vf.TasksetConfig):
     section: Literal[0,18,31] = 18
     cache_root: str = 'artifacts/plasma_painter/free_sections'
+    style_pool: str | None = None
+    style: str = 'van-gogh'
 
 
 class PlasmaPaintGymTaskset(vf.Taskset[PlasmaPaintGymTask, PlasmaPaintGymConfig]):
@@ -35,7 +39,8 @@ class PlasmaPaintGymTaskset(vf.Taskset[PlasmaPaintGymTask, PlasmaPaintGymConfig]
         tasks=[]
         for i,frame in enumerate(clip['frames']):
             PaintingGym(frame)
-            tasks.append(PlasmaPaintGymTask(PlasmaPaintGymData(idx=i,frame=frame,prompt=None),self.config.task))
+            tasks.append(PlasmaPaintGymTask(PlasmaPaintGymData(idx=i,frame=frame,prompt=None,
+                style_pool=self.config.style_pool,style=self.config.style if self.config.style_pool else None),self.config.task))
         return tasks
 
 
@@ -51,13 +56,22 @@ class PlasmaPaintGymEnv(vf.SingleAgentEnv):
     async def run(self, task, agents):
         require_local_agent(agents.agent)
         gym=PaintingGym(task.data.frame)
+        reference_parts=[]
+        if task.data.style_pool:
+            from PIL import Image
+            from plasma_painter.ratings.style_pool import resolve_style
+            for path in resolve_style(task.data.style_pool,task.data.style):
+                with Image.open(path) as image:
+                    reference_parts.append(vf.ImageUrlContentPart(image_url=vf.ImageUrlSource(url=image_data_url(image.convert('RGB')))))
         feedback=None
         async with agents.agent.interaction(task) as interaction:
             while not gym.done:
                 obs=gym.observe()
-                parts=[vf.ImageUrlContentPart(image_url=vf.ImageUrlSource(url=image_data_url(obs[k])))
+                parts=reference_parts+[vf.ImageUrlContentPart(image_url=vf.ImageUrlSource(url=image_data_url(obs[k])))
                        for k in ('scientific','canvas')]
-                parts.append(vf.TextContentPart(text='Paint the first image onto the second (current canvas). '
+                parts.append(vf.TextContentPart(text='The last two images are the scientific target and current canvas. '
+                    'Earlier images, if present, are approved style references: use their mark-making and color relationships, '
+                    'not their depicted objects or geometry. Preserve the plasma structure. '
                     'Return one JSON action: paint with strokes, undo, or finish. All coordinates are normalized '
                     'XY in [0,1], not pixels. No JavaScript. Tools: '+json.dumps(obs['tools'])+
                     f' Turns left: {obs["turns_left"]}. Feedback: '+json.dumps(feedback)))

@@ -73,7 +73,14 @@ def main():
     p.add_argument('--output',required=True)
     p.add_argument('--model-path',help='Existing local vision model; no downloading or external API')
     p.add_argument('--reference',action='append',default=[],help='Explicitly permitted local reference image (max 2)')
+    p.add_argument('--style-pool',help='Local paired-style pool manifest with verified reference hashes')
+    p.add_argument('--style',help='Style key in the selected pool')
     args=p.parse_args()
+    if args.style_pool:
+        if not args.style or args.reference:p.error('--style-pool requires --style and cannot mix --reference')
+        from plasma_painter.ratings.style_pool import resolve_style
+        args.reference=resolve_style(args.style_pool,args.style)
+    elif args.style:p.error('--style requires --style-pool')
     if len(args.reference)>2:p.error('At most two references')
     if Path(args.output).exists():p.error('Output already exists; choose a new episode directory')
     if args.synthetic:
@@ -95,7 +102,8 @@ def main():
     else:demonstration(env)
     out=env.save(args.output)
     (out/'run.json').write_text(json.dumps({'policy':'frozen_local_vision' if args.model_path else 'hand_authored_tool_demonstration',
-        'model':args.model_path,'references':args.reference,'training_performed':False,'synthetic':args.synthetic},indent=2))
+        'model':args.model_path,'references':args.reference,'style':args.style,'style_pool':args.style_pool,
+        'training_performed':False,'synthetic':args.synthetic},indent=2))
     print(out)
 
 

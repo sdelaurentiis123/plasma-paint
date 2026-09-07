@@ -1,0 +1,15 @@
+{
+  "version": "style-reference-pool-v1",
+  "selection_authority": "user authorized representative library selections, 2026-09-07",
+  "individual_human_ratings": false,
+  "styles": {
+    "van-gogh": {"artist": "Vincent van Gogh", "love": [28560, 14586], "okay": [], "selection_note": "Visible directional paint, strong color relationships and substantial differences in subject and composition."},
+    "seurat-pointillism": {"artist": "Georges Seurat", "love": [27992], "okay": [20199], "selection_note": "La Grande Jatte supplies divided-color marks. The earlier Bathers study is looser and remains calibration-only, not a pointillist target."},
+    "manet": {"artist": "Édouard Manet", "love": [44892, 81533], "okay": [], "selection_note": "Broad visible brushwork and value masses across a still life and an outdoor scene."}
+  },
+  "roles": {
+    "artist_images": "positive style references; never plasma geometry targets or executable action demonstrations",
+    "plasma_frames": "scientific content targets; never evidence of human aesthetic preference",
+    "generated_paintings": "unrated until evaluated; never automatically love"
+  }
+}
