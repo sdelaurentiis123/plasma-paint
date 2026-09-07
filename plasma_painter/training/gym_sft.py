@@ -60,6 +60,12 @@ def execute(dataset,model_path,output,steps):
     out=Path(output)
     if out.exists():raise ValueError('Refuse to overwrite adapter')
     root=Path(dataset);all_rows=[json.loads(l) for l in (root/'examples.jsonl').read_text().splitlines()]
+    for row in all_rows:
+        if 'image_sha256' in row:
+            if len(row['images'])!=len(row['image_sha256']):raise ValueError('Incomplete image hashes')
+            for name,digest in zip(row['images'],row['image_sha256']):
+                if Path(name).name!=name or sha256_file(root/name)!=digest:raise ValueError('Training image hash mismatch')
+    purpose=json.loads((root/'manifest.json').read_text()).get('purpose','valid-tool-use SFT')
     rows=[r for r in all_rows if r['split']=='format_train']
     np.random.default_rng(1701).shuffle(rows)
     if not rows:raise ValueError('No training demonstrations')
@@ -124,7 +130,7 @@ def execute(dataset,model_path,output,steps):
     (out/'run.json').write_text(json.dumps({'steps':steps,'losses':losses,'model':model_path,
         'dataset_sha256':sha256_file(root/'examples.jsonl'),'git':git_state(),'seed':1701,
         'wall_seconds':time.perf_counter()-started,'hardware':torch.cuda.get_device_name(),
-        'purpose':'valid-tool-use SFT, not aesthetic or RL training','adapter':config.to_dict(),
+        'purpose':purpose,'adapter':config.to_dict(),
         'format_eval_before':before,'format_eval_after':after},indent=2,default=list))
 
 

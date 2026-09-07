@@ -23,6 +23,20 @@ def demonstration(env):
     env.step({'action':'finish'})
 
 
+def painting_prompt(obs,previous=None):
+    return ('Paint the plasma in the penultimate image onto the last image (your current canvas). '
+        'Earlier images are style references, not objects to copy. Choose tools, colors and free XY '
+        'stroke paths. Output ONE JSON action only, no code. Work incrementally: at most 4 strokes '
+        'in this response. Inspect the updated canvas on the next turn. '
+        'X is radial, Y is field-aligned z; this is one fixed frame, no time. '
+        'Tools: '+json.dumps(obs['tools'])+' Valid syntax example (tool mechanics only, not an artist recipe): '
+        '{"action":"paint","strokes":[{"points":[[0.2,0.3],[0.25,0.35]],"medium":"ink",'
+        '"color":"#254060","width":0.01,"opacity":0.5}]} '
+        'Other actions: {"action":"undo"}, {"action":"finish"}. '
+        f'Turns left {obs["turns_left"]}; strokes left {obs["strokes_left"]}. '
+        'Last action feedback: '+json.dumps(previous))
+
+
 def vision_rollout(env, model_path, references, *, loaded=None, on_step=None):
     import torch
     from PIL import Image
@@ -41,17 +55,7 @@ def vision_rollout(env, model_path, references, *, loaded=None, on_step=None):
     previous=None
     while not env.done:
         obs=env.observe();images=refs+[obs['scientific'],obs['canvas']]
-        prompt=('Paint the plasma in the penultimate image onto the last image (your current canvas). '
-            'Earlier images are style references, not objects to copy. Choose tools, colors and free XY '
-            'stroke paths. Output ONE JSON action only, no code. Work incrementally: at most 4 strokes '
-            'in this response. Inspect the updated canvas on the next turn. '
-            'X is radial, Y is field-aligned z; this is one fixed frame, no time. '
-            'Tools: '+json.dumps(obs['tools'])+' Valid syntax example (tool mechanics only, not an artist recipe): '
-            '{"action":"paint","strokes":[{"points":[[0.2,0.3],[0.25,0.35]],"medium":"ink",'
-            '"color":"#254060","width":0.01,"opacity":0.5}]} '
-            'Other actions: {"action":"undo"}, {"action":"finish"}. '
-            f'Turns left {obs["turns_left"]}; strokes left {obs["strokes_left"]}. '
-            'Last action feedback: '+json.dumps(previous))
+        prompt=painting_prompt(obs,previous)
         messages=[{'role':'user','content':[{'type':'image'} for _ in images]+[{'type':'text','text':prompt}]}]
         text=processor.apply_chat_template(messages,tokenize=False,add_generation_prompt=True)
         inputs=processor(text=[text],images=images,return_tensors='pt').to(model.device)
